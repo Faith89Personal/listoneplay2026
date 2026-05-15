@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useItems } from "@/lib/useItems";
-import { useReservations, type Reservation } from "@/lib/useReservations";
+import { useReservations } from "@/lib/useReservations";
+import { useManualEvents, type ManualEvent } from "@/lib/useManualEvents";
 import { useSession } from "@/lib/useSession";
 import {
   EVENT_CLOSE_HOUR,
@@ -11,60 +12,52 @@ import {
   EVENT_OPEN_HOUR,
   utcIsoToRomeParts,
 } from "@/lib/eventDays";
+import {
+  type CalendarBlock,
+  manualToBlock,
+  reservationToBlock,
+} from "@/lib/calendarBlocks";
 import ReservationModal from "@/components/ReservationModal";
+import ManualEventModal from "@/components/ManualEventModal";
 import type { Item } from "@/types";
+import { CalendarIcon } from "@/components/icons";
 
 const HOURS: number[] = Array.from(
   { length: EVENT_CLOSE_HOUR - EVENT_OPEN_HOUR + 1 },
   (_, i) => EVENT_OPEN_HOUR + i,
 );
-const PX_PER_MIN = 1.5; // 90px per hour
+const PX_PER_MIN = 1.5;
 
-type DayBlock = {
-  reservation: Reservation;
-  item: Item | null;
+type Positioned = CalendarBlock & {
   topPx: number;
   heightPx: number;
   startTime: string;
   endTime: string;
   overlapping: boolean;
-  editorName: string | null;
-  stands: string[];
 };
 
-function buildDayBlocks(
-  reservations: Reservation[],
-  itemsById: Map<number, Item>,
-  editorStands: Record<string, { stands: string[] }>,
-): Map<string, DayBlock[]> {
-  const blocks = new Map<string, DayBlock[]>();
-  for (const eventDay of EVENT_DAYS) blocks.set(eventDay.date, []);
-  for (const r of reservations) {
-    const p = utcIsoToRomeParts(r.reservedAt);
-    const list = blocks.get(p.date);
+function positionByDay(blocks: CalendarBlock[]): Map<string, Positioned[]> {
+  const out = new Map<string, Positioned[]>();
+  for (const d of EVENT_DAYS) out.set(d.date, []);
+  for (const b of blocks) {
+    const p = utcIsoToRomeParts(b.reservedAt);
+    const list = out.get(p.date);
     if (!list) continue;
     const minutesFromOpen = (p.hour - EVENT_OPEN_HOUR) * 60 + p.minute;
     const topPx = Math.max(0, minutesFromOpen) * PX_PER_MIN;
-    const heightPx = r.durationMinutes * PX_PER_MIN;
-    const endMs =
-      new Date(r.reservedAt).getTime() + r.durationMinutes * 60_000;
+    const heightPx = b.durationMinutes * PX_PER_MIN;
+    const endMs = new Date(b.reservedAt).getTime() + b.durationMinutes * 60_000;
     const endParts = utcIsoToRomeParts(new Date(endMs).toISOString());
-    const item = itemsById.get(r.itemId) ?? null;
-    const editorName = item?.editor.name ?? null;
-    const stands = editorName ? (editorStands[editorName]?.stands ?? []) : [];
     list.push({
-      reservation: r,
-      item,
+      ...b,
       topPx,
       heightPx,
       startTime: p.time,
       endTime: endParts.time,
       overlapping: false,
-      editorName,
-      stands,
     });
   }
-  for (const list of blocks.values()) {
+  for (const list of out.values()) {
     list.sort((a, b) => a.topPx - b.topPx);
     for (let i = 0; i < list.length; i++) {
       const a = list[i];
@@ -79,14 +72,20 @@ function buildDayBlocks(
       }
     }
   }
-  return blocks;
+  return out;
 }
 
 export default function CalendarView() {
   const session = useSession();
   const { data } = useItems();
   const reservationsState = useReservations();
-  const [editing, setEditing] = useState<Item | null>(null);
+  const manualState = useManualEvents();
+
+  const [editingReservation, setEditingReservation] = useState<Item | null>(
+    null,
+  );
+  const [editingManual, setEditingManual] = useState<ManualEvent | null>(null);
+  const [creatingManual, setCreatingManual] = useState<boolean>(false);
 
   const itemsById = useMemo(() => {
     const m = new Map<number, Item>();
@@ -94,15 +93,22 @@ export default function CalendarView() {
     return m;
   }, [data]);
 
-  const blocksByDay = useMemo(
-    () =>
-      buildDayBlocks(
-        reservationsState.reservations,
-        itemsById,
-        data?.editors.editors ?? {},
+  const blocks: CalendarBlock[] = useMemo(() => {
+    const editorStands = data?.editors.editors ?? {};
+    const reservationBlocks = reservationsState.reservations.map((r) =>
+      reservationToBlock(
+        r,
+        itemsById.get(r.itemId) ?? null,
+        itemsById.get(r.itemId)
+          ? (editorStands[itemsById.get(r.itemId)!.editor.name]?.stands ?? [])
+          : [],
       ),
-    [reservationsState.reservations, itemsById, data?.editors.editors],
-  );
+    );
+    const manualBlocks = manualState.events.map(manualToBlock);
+    return [...reservationBlocks, ...manualBlocks];
+  }, [reservationsState.reservations, manualState.events, itemsById, data]);
+
+  const blocksByDay = useMemo(() => positionByDay(blocks), [blocks]);
 
   if (session.loading || reservationsState.sessionLoading) {
     return (
@@ -127,6 +133,8 @@ export default function CalendarView() {
     );
   }
 
+  const total = blocks.length;
+
   return (
     <>
       <header className="sticky top-0 z-30 bg-brand text-white shadow">
@@ -136,7 +144,15 @@ export default function CalendarView() {
             aria-label="Torna alla lista"
             className="rounded p-1.5 active:bg-white/15"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="20" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
@@ -144,18 +160,25 @@ export default function CalendarView() {
           <div className="flex flex-1 flex-col leading-tight">
             <span className="text-base font-bold">Le mie prenotazioni</span>
             <span className="text-[11px] opacity-80">
-              {reservationsState.reservations.length} prenotazion
-              {reservationsState.reservations.length === 1 ? "e" : "i"}
+              {total} {total === 1 ? "evento" : "eventi"}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => setCreatingManual(true)}
+            className="flex items-center gap-1 rounded bg-white px-2 py-1 text-xs font-semibold text-brand-dark active:bg-white/90"
+          >
+            <CalendarIcon className="h-4 w-4" />
+            <span>Aggiungi</span>
+          </button>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-2 pb-24 pt-3">
-        {reservationsState.reservations.length === 0 && (
+        {total === 0 && (
           <p className="px-3 py-6 text-center text-sm text-neutral-600">
-            Nessuna prenotazione. Torna alla lista e premi l&apos;icona
-            calendario sul gioco che vuoi prenotare.
+            Nessun evento ancora. Aggiungi una prenotazione dalla lista oppure
+            un evento manuale con il bottone in alto.
           </p>
         )}
         <div className="flex gap-2">
@@ -164,7 +187,7 @@ export default function CalendarView() {
               <div
                 key={h}
                 style={{ height: 60 * PX_PER_MIN }}
-                className="text-right pr-1 text-[10px] text-neutral-500"
+                className="pr-1 text-right text-[10px] text-neutral-500"
               >
                 {String(h).padStart(2, "0")}:00
               </div>
@@ -179,54 +202,74 @@ export default function CalendarView() {
                 </div>
                 <div
                   className="relative border-l border-neutral-200 bg-neutral-50"
-                  style={{ height: (EVENT_CLOSE_HOUR - EVENT_OPEN_HOUR) * 60 * PX_PER_MIN }}
+                  style={{
+                    height:
+                      (EVENT_CLOSE_HOUR - EVENT_OPEN_HOUR) * 60 * PX_PER_MIN,
+                  }}
                 >
                   {HOURS.map((h, idx) =>
                     idx === HOURS.length - 1 ? null : (
                       <div
                         key={h}
-                        style={{ top: idx * 60 * PX_PER_MIN, height: 60 * PX_PER_MIN }}
+                        style={{
+                          top: idx * 60 * PX_PER_MIN,
+                          height: 60 * PX_PER_MIN,
+                        }}
                         className="absolute inset-x-0 border-b border-neutral-200"
                       />
                     ),
                   )}
                   {list.map((b) => {
                     const isTall = b.heightPx >= 60;
+                    const isManual = b.kind === "manual";
+                    const base = b.overlapping
+                      ? "bg-amber-200 ring-1 ring-amber-500 text-amber-900"
+                      : isManual
+                        ? "bg-indigo-500 text-white"
+                        : "bg-brand text-white";
                     return (
                       <button
-                        key={`${b.reservation.itemId}-${b.reservation.reservedAt}`}
+                        key={b.key}
                         type="button"
-                        onClick={() => b.item && setEditing(b.item)}
+                        onClick={() => {
+                          if (b.kind === "reservation" && b.itemId) {
+                            const item = itemsById.get(b.itemId);
+                            if (item) setEditingReservation(item);
+                          } else if (b.kind === "manual" && b.manualId) {
+                            const me = manualState.events.find(
+                              (m) => m.id === b.manualId,
+                            );
+                            if (me) setEditingManual(me);
+                          }
+                        }}
                         style={{
                           top: b.topPx,
                           height: Math.max(20, b.heightPx),
                         }}
                         className={
                           "absolute inset-x-0 mx-0.5 overflow-hidden rounded px-1.5 py-0.5 text-left text-[10px] leading-tight shadow-sm " +
-                          (b.overlapping
-                            ? "bg-amber-200 ring-1 ring-amber-500"
-                            : "bg-brand text-white")
+                          base
                         }
                       >
                         <div className="font-semibold">
                           {b.startTime}–{b.endTime}
                         </div>
-                        <div className="truncate font-medium">
-                          {b.item?.name ?? `#${b.reservation.itemId}`}
-                        </div>
-                        {b.editorName && (
+                        <div className="truncate font-medium">{b.title}</div>
+                        {(b.editorName || b.stand) && (
                           <div className="flex items-baseline gap-1 truncate text-[9px] opacity-90">
-                            <span className="truncate">{b.editorName}</span>
-                            {b.stands.length > 0 && (
+                            {b.editorName && (
+                              <span className="truncate">{b.editorName}</span>
+                            )}
+                            {b.stand && (
                               <span className="shrink-0 font-bold">
-                                · {b.stands.join("·")}
+                                · {b.stand}
                               </span>
                             )}
                           </div>
                         )}
-                        {isTall && b.reservation.note && (
+                        {isTall && b.note && (
                           <div className="truncate text-[9px] italic opacity-80">
-                            {b.reservation.note}
+                            {b.note}
                           </div>
                         )}
                       </button>
@@ -239,16 +282,30 @@ export default function CalendarView() {
         </div>
       </main>
 
-      {editing && (
+      {editingReservation && (
         <ReservationModal
-          item={editing}
+          item={editingReservation}
           existing={
             reservationsState.reservations.find(
-              (r) => r.itemId === editing.id,
+              (r) => r.itemId === editingReservation.id,
             ) ?? null
           }
-          reservations={reservationsState.reservations}
-          onClose={() => setEditing(null)}
+          allBlocks={blocks}
+          onClose={() => setEditingReservation(null)}
+        />
+      )}
+      {editingManual && (
+        <ManualEventModal
+          existing={editingManual}
+          allBlocks={blocks}
+          onClose={() => setEditingManual(null)}
+        />
+      )}
+      {creatingManual && (
+        <ManualEventModal
+          existing={null}
+          allBlocks={blocks}
+          onClose={() => setCreatingManual(false)}
         />
       )}
     </>

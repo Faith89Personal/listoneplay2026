@@ -33,8 +33,20 @@ const statements = [
     PRIMARY KEY (email, item_id)
   )`,
   `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER NOT NULL DEFAULT 60`,
+  `CREATE TABLE IF NOT EXISTS manual_events (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    reserved_at TIMESTAMPTZ NOT NULL,
+    duration_minutes INTEGER NOT NULL DEFAULT 60,
+    stand TEXT,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE INDEX IF NOT EXISTS selections_email_idx ON selections (email)`,
   `CREATE INDEX IF NOT EXISTS reservations_email_idx ON reservations (email)`,
+  `CREATE INDEX IF NOT EXISTS manual_events_email_idx ON manual_events (email)`,
 ];
 
 for (const stmt of statements) {

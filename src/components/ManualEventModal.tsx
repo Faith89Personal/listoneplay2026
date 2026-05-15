@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Item } from "@/types";
-import { type Reservation, useReservations } from "@/lib/useReservations";
+import { type ManualEvent, useManualEvents } from "@/lib/useManualEvents";
 import {
   type CalendarBlock,
   findBlockOverlaps,
-  reservationKey,
+  manualKey,
 } from "@/lib/calendarBlocks";
 import {
   EVENT_CLOSE_HOUR,
@@ -31,21 +30,20 @@ const TIME_SLOTS: string[] = (() => {
 const DURATION_OPTIONS = [30, 45, 60, 90, 120, 150, 180];
 
 type Props = {
-  item: Item;
-  existing: Reservation | null;
+  existing: ManualEvent | null;
   allBlocks: CalendarBlock[];
   onClose: () => void;
 };
 
-export default function ReservationModal({
-  item,
+export default function ManualEventModal({
   existing,
   allBlocks,
   onClose,
 }: Props) {
-  const { save, remove } = useReservations();
+  const { save, remove } = useManualEvents();
   const initial = existing ? utcIsoToRomeParts(existing.reservedAt) : null;
 
+  const [name, setName] = useState<string>(existing?.name ?? "");
   const [date, setDate] = useState<string>(
     initial?.date ?? EVENT_DAYS[0].date,
   );
@@ -53,6 +51,7 @@ export default function ReservationModal({
   const [duration, setDuration] = useState<number>(
     existing?.durationMinutes ?? 60,
   );
+  const [stand, setStand] = useState<string>(existing?.stand ?? "");
   const [note, setNote] = useState<string>(existing?.note ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,11 +69,11 @@ export default function ReservationModal({
 
   const candidate = useMemo(
     () => ({
-      key: reservationKey(item.id),
+      key: existing ? manualKey(existing.id) : undefined,
       reservedAt: romeLocalToUtcIso(date, time),
       durationMinutes: duration,
     }),
-    [item.id, date, time, duration],
+    [existing, date, time, duration],
   );
 
   async function commit() {
@@ -82,9 +81,11 @@ export default function ReservationModal({
     setError(null);
     try {
       await save({
-        itemId: item.id,
+        id: existing?.id,
+        name: name.trim(),
         reservedAt: candidate.reservedAt,
         durationMinutes: duration,
+        stand: stand.trim() || null,
         note: note.trim() || null,
       });
       onClose();
@@ -96,6 +97,10 @@ export default function ReservationModal({
   }
 
   function handleSaveClick() {
+    if (name.trim().length === 0) {
+      setError("invalid_name");
+      return;
+    }
     const o = findBlockOverlaps(candidate, allBlocks);
     if (o.length > 0) {
       setOverlapsPending(o);
@@ -105,10 +110,11 @@ export default function ReservationModal({
   }
 
   async function handleDelete() {
+    if (!existing) return;
     setBusy(true);
     setError(null);
     try {
-      await remove(item.id);
+      await remove(existing.id);
       onClose();
     } catch (err) {
       setError((err as Error).message);
@@ -129,9 +135,11 @@ export default function ReservationModal({
         <div className="mb-3 flex items-start gap-2">
           <div className="flex-1">
             <h2 className="text-base font-semibold text-brand-dark">
-              {existing ? "Modifica prenotazione" : "Prenota tavolo"}
+              {existing ? "Modifica evento" : "Nuovo evento manuale"}
             </h2>
-            <p className="line-clamp-2 text-sm text-neutral-700">{item.name}</p>
+            <p className="text-xs text-neutral-600">
+              Per giochi/attività non presenti nella lista GSNT.
+            </p>
           </div>
           <button
             type="button"
@@ -145,6 +153,21 @@ export default function ReservationModal({
 
         {!overlapsPending && (
           <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-neutral-600">
+                Nome
+              </span>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={200}
+                placeholder="es. demo MyCity con Asmodee"
+                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
+                required
+              />
+            </label>
+
             <div>
               <span className="mb-1 block text-xs font-medium text-neutral-600">
                 Giorno
@@ -223,6 +246,20 @@ export default function ReservationModal({
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-neutral-600">
+                Stand (opzionale)
+              </span>
+              <input
+                type="text"
+                value={stand}
+                onChange={(e) => setStand(e.target.value)}
+                maxLength={40}
+                placeholder="es. D12 oppure D12·E26"
+                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm uppercase"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-neutral-600">
                 Nota (opzionale)
               </span>
               <textarea
@@ -240,7 +277,7 @@ export default function ReservationModal({
                 role="alert"
                 className="rounded bg-red-50 px-2 py-1 text-xs text-red-700"
               >
-                Errore: {error}
+                {error === "invalid_name" ? "Il nome è obbligatorio" : `Errore: ${error}`}
               </p>
             )}
 
@@ -269,7 +306,7 @@ export default function ReservationModal({
                 onClick={handleSaveClick}
                 className="rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {busy ? "…" : existing ? "Aggiorna" : "Prenota"}
+                {busy ? "…" : existing ? "Aggiorna" : "Salva"}
               </button>
             </div>
           </div>
@@ -278,7 +315,7 @@ export default function ReservationModal({
         {overlapsPending && (
           <div className="space-y-3">
             <p className="text-sm text-neutral-800">
-              Questa prenotazione si sovrappone a:
+              Questo evento si sovrappone a:
             </p>
             <ul className="space-y-1 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
               {overlapsPending.map((b) => (
@@ -295,7 +332,7 @@ export default function ReservationModal({
               ))}
             </ul>
             <p className="text-sm text-neutral-700">
-              Procedere comunque con la prenotazione?
+              Procedere comunque con il salvataggio?
             </p>
             {error && (
               <p

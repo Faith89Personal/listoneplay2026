@@ -1,0 +1,15 @@
+{
+  "_comment": "Map an API editor name to one or more stand codes. Overrides editors.json. Leave as empty array to skip. Edit and commit, then re-deploy on Vercel (no rebuild of editors.json needed).",
+  "Barry Games": [],
+  "BlacKnight": [],
+  "Ergo Ludo Editions": [],
+  "Gear Games": [],
+  "Haba": [],
+  "La Compagnia delle Dodici Gemme": [],
+  "Menecats Games": [],
+  "Naivinia": [],
+  "STV Design": [],
+  "Svoora": [],
+  "Top Hat Games": [],
+  "WBS": []
+}

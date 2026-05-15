@@ -6,6 +6,12 @@ import type { EditorsSnapshot, Item } from "@/types";
 import { useSelections, type Selections } from "@/lib/storage";
 import { useItems } from "@/lib/useItems";
 import { useReservations } from "@/lib/useReservations";
+import { useManualEvents } from "@/lib/useManualEvents";
+import {
+  type CalendarBlock,
+  manualToBlock,
+  reservationToBlock,
+} from "@/lib/calendarBlocks";
 import GameRow from "@/components/GameRow";
 import AuthBar from "@/components/AuthBar";
 import ReservationModal from "@/components/ReservationModal";
@@ -179,6 +185,7 @@ export default function GameList() {
   const { data, loading, error, stale, refresh } = useItems();
   const { selections, cycle, hydrated } = useSelections();
   const reservationsState = useReservations();
+  const manualState = useManualEvents();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
@@ -190,6 +197,23 @@ export default function GameList() {
     for (const r of reservationsState.reservations) m.set(r.itemId, r);
     return m;
   }, [reservationsState.reservations]);
+
+  const itemsById = useMemo(() => {
+    const m = new Map<number, Item>();
+    for (const it of data?.items ?? []) m.set(it.id, it);
+    return m;
+  }, [data]);
+
+  const allBlocks: CalendarBlock[] = useMemo(() => {
+    const editorStands = data?.editors.editors ?? {};
+    const r = reservationsState.reservations.map((res) => {
+      const it = itemsById.get(res.itemId) ?? null;
+      const stands = it ? (editorStands[it.editor.name]?.stands ?? []) : [];
+      return reservationToBlock(res, it, stands);
+    });
+    const m = manualState.events.map(manualToBlock);
+    return [...r, ...m];
+  }, [reservationsState.reservations, manualState.events, itemsById, data]);
 
   const items = data?.items ?? [];
   const editorsSnap: EditorsSnapshot = data?.editors ?? {
@@ -445,7 +469,7 @@ export default function GameList() {
         <ReservationModal
           item={reservingItem}
           existing={reservationByItem.get(reservingItem.id) ?? null}
-          reservations={reservationsState.reservations}
+          allBlocks={allBlocks}
           onClose={() => setReservingItem(null)}
         />
       )}
