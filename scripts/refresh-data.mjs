@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -10,13 +10,13 @@ const { PDFParse } = require("pdf-parse");
 const __filename = fileURLToPath(import.meta.url);
 const ROOT = resolve(dirname(__filename), "..");
 const OUT = resolve(ROOT, "src/data");
+const PDF_PATH = resolve(ROOT, "public/Mappa-Play-2026.pdf");
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const ITEMS_URL = "https://list.giochisulnostrotavolo.it/be/public/api/items";
 const VOTES_URL = "https://list.giochisulnostrotavolo.it/be/public/api/votes";
-const PDF_URL = "https://www.play-festival.it/assets/Uploads/Mappa-Play-2026.pdf";
 
 const STAND_TRAIL_RE = /^(.*?)\s+([A-Z]{1,2})\s*(\d{1,3})\s*$/;
 const STAND_ONLY_RE = /^([A-Z]{1,2})\s*(\d{1,3})\s*$/;
@@ -264,9 +264,9 @@ async function main() {
   await writeFile(resolve(OUT, "votes.json"), JSON.stringify(votes, null, 2) + "\n", "utf8");
   console.log(`${votes.length} vote entries saved`);
 
-  process.stdout.write(`Fetching PDF map … `);
-  const pdf = await fetchBuffer(PDF_URL);
-  console.log(`${pdf.length} bytes`);
+  process.stdout.write(`Reading PDF map from disk … `);
+  const pdf = await readFile(PDF_PATH);
+  console.log(`${pdf.length} bytes (public/Mappa-Play-2026.pdf)`);
 
   process.stdout.write(`Parsing PDF … `);
   const pdfEntries = await parsePdf(pdf);
@@ -289,7 +289,7 @@ async function main() {
     }
   }
   const payload = {
-    source: PDF_URL,
+    source: "public/Mappa-Play-2026.pdf",
     generatedAt: new Date().toISOString(),
     editors: editorsOut,
   };

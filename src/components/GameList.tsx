@@ -27,8 +27,7 @@ type Section = {
 
 type Filter = "all" | "look" | "play" | "buy";
 
-const MAP_PDF_URL =
-  "https://www.play-festival.it/assets/Uploads/Mappa-Play-2026.pdf";
+const MAP_PDF_URL = "/Mappa-Play-2026.pdf";
 
 function buildSections(
   items: Item[],
