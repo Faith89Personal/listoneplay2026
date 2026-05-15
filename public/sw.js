@@ -17,7 +17,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || "",
     icon: "/icon.jpg",
-    badge: "/icon.jpg",
+    badge: "/api/badge",
     data: { url: data.url || "/" },
   };
   event.waitUntil(self.registration.showNotification(title, options));
