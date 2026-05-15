@@ -40,6 +40,12 @@ function emailToName(email: string): string {
   return at > 0 ? email.slice(0, at) : email;
 }
 
+function nextGuestPlaceholder(existing: string[]): string {
+  let n = 1;
+  while (existing.includes(`Guest ${n}`)) n += 1;
+  return `Guest ${n}`;
+}
+
 export default function ManualEventModal({
   existing,
   allBlocks,
@@ -515,8 +521,8 @@ export default function ManualEventModal({
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === ",") {
                       e.preventDefault();
-                      const v = guestInput.trim();
-                      if (v && !guests.includes(v) && guests.length < 20) {
+                      const v = guestInput.trim() || nextGuestPlaceholder(guests);
+                      if (!guests.includes(v) && guests.length < 20) {
                         setGuests([...guests, v]);
                       }
                       setGuestInput("");
@@ -529,8 +535,8 @@ export default function ManualEventModal({
                 <button
                   type="button"
                   onClick={() => {
-                    const v = guestInput.trim();
-                    if (v && !guests.includes(v) && guests.length < 20) {
+                    const v = guestInput.trim() || nextGuestPlaceholder(guests);
+                    if (!guests.includes(v) && guests.length < 20) {
                       setGuests([...guests, v]);
                     }
                     setGuestInput("");
