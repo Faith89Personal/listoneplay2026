@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import { requireSql } from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/session";
 
@@ -7,12 +8,38 @@ export const dynamic = "force-dynamic";
 
 type Row = {
   id: number;
+  email: string;
   name: string;
   reserved_at: string;
   duration_minutes: number;
   stand: string | null;
   note: string | null;
+  share_token: string | null;
+  max_seats: number | null;
+  shared_with: string[] | null;
+  guests: string[] | null;
 };
+
+function newShareToken(): string {
+  return randomBytes(6).toString("hex");
+}
+
+function rowToJson(r: Row, currentEmail: string) {
+  return {
+    id: r.id,
+    name: r.name,
+    reservedAt: r.reserved_at,
+    durationMinutes: r.duration_minutes,
+    stand: r.stand,
+    note: r.note,
+    shareToken: r.share_token,
+    maxSeats: r.max_seats,
+    sharedWith: r.shared_with ?? [],
+    guests: r.guests ?? [],
+    ownerEmail: r.email,
+    isOwner: r.email === currentEmail,
+  };
+}
 
 export async function GET() {
   const session = await getSessionFromCookies();
@@ -22,20 +49,15 @@ export async function GET() {
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT id, name, reserved_at, duration_minutes, stand, note
+      SELECT id, email, name, reserved_at, duration_minutes, stand, note,
+             share_token, max_seats, shared_with, guests
       FROM manual_events
       WHERE email = ${session.email}
+         OR ${session.email} = ANY(shared_with)
       ORDER BY reserved_at ASC
     `) as Row[];
     return NextResponse.json({
-      events: rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        reservedAt: r.reserved_at,
-        durationMinutes: r.duration_minutes,
-        stand: r.stand,
-        note: r.note,
-      })),
+      events: rows.map((r) => rowToJson(r, session.email)),
     });
   } catch (err) {
     return NextResponse.json(
@@ -52,6 +74,8 @@ type PostBody = {
   durationMinutes?: unknown;
   stand?: unknown;
   note?: unknown;
+  maxSeats?: unknown;
+  guests?: unknown;
 };
 
 export async function POST(req: Request) {
@@ -91,6 +115,19 @@ export async function POST(req: Request) {
     typeof body.note === "string" && body.note.length > 0
       ? body.note.trim().slice(0, 500)
       : null;
+  const maxSeats =
+    typeof body.maxSeats === "number" &&
+    body.maxSeats >= 1 &&
+    body.maxSeats <= 20
+      ? Math.round(body.maxSeats)
+      : null;
+  const guests = Array.isArray(body.guests)
+    ? (body.guests as unknown[])
+        .filter((g): g is string => typeof g === "string")
+        .map((g) => g.trim().slice(0, 80))
+        .filter((g) => g.length > 0)
+        .slice(0, 20)
+    : [];
   const id = typeof body.id === "number" && body.id > 0 ? body.id : null;
 
   try {
@@ -103,21 +140,36 @@ export async function POST(req: Request) {
           duration_minutes = ${duration},
           stand = ${stand},
           note = ${note},
+          max_seats = ${maxSeats},
+          guests = ${guests},
           updated_at = NOW()
         WHERE id = ${id} AND email = ${session.email}
-        RETURNING id
-      `) as { id: number }[];
+        RETURNING id, share_token
+      `) as { id: number; share_token: string | null }[];
       if (updated.length === 0) {
         return NextResponse.json({ error: "not_found" }, { status: 404 });
       }
-      return NextResponse.json({ ok: true, id: updated[0].id });
+      return NextResponse.json({
+        ok: true,
+        id: updated[0].id,
+        shareToken: updated[0].share_token,
+      });
     }
+    const token = newShareToken();
     const inserted = (await sql`
-      INSERT INTO manual_events (email, name, reserved_at, duration_minutes, stand, note)
-      VALUES (${session.email}, ${name}, ${parsed.toISOString()}, ${duration}, ${stand}, ${note})
-      RETURNING id
-    `) as { id: number }[];
-    return NextResponse.json({ ok: true, id: inserted[0].id });
+      INSERT INTO manual_events
+        (email, name, reserved_at, duration_minutes, stand, note,
+         max_seats, share_token, guests)
+      VALUES
+        (${session.email}, ${name}, ${parsed.toISOString()}, ${duration},
+         ${stand}, ${note}, ${maxSeats}, ${token}, ${guests})
+      RETURNING id, share_token
+    `) as { id: number; share_token: string }[];
+    return NextResponse.json({
+      ok: true,
+      id: inserted[0].id,
+      shareToken: inserted[0].share_token,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: "db_unavailable", detail: (err as Error).message },

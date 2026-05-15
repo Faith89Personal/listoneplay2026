@@ -10,6 +10,12 @@ export type ManualEvent = {
   durationMinutes: number;
   stand: string | null;
   note: string | null;
+  shareToken: string | null;
+  maxSeats: number | null;
+  sharedWith: string[];
+  guests: string[];
+  ownerEmail: string;
+  isOwner: boolean;
 };
 
 export type ManualEventsState = {
@@ -81,7 +87,9 @@ export function useManualEvents() {
       durationMinutes: number;
       stand: string | null;
       note: string | null;
-    }) => {
+      maxSeats?: number | null;
+      guests?: string[];
+    }): Promise<{ id: number; shareToken: string | null }> => {
       const res = await fetch("/api/manual-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,8 +101,13 @@ export function useManualEvents() {
         };
         throw new Error(data.error || `http_${res.status}`);
       }
+      const data = (await res.json()) as {
+        id: number;
+        shareToken: string | null;
+      };
       const fresh = await load();
       setShared(fresh);
+      return { id: data.id, shareToken: data.shareToken };
     },
     [],
   );

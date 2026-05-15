@@ -109,7 +109,7 @@ export function useReservations() {
       note: string | null;
       maxSeats: number | null;
       guests?: string[];
-    }) => {
+    }): Promise<{ shareToken: string | null }> => {
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,8 +121,10 @@ export function useReservations() {
         };
         throw new Error(data.error || `http_${res.status}`);
       }
+      const data = (await res.json()) as { shareToken: string | null };
       const fresh = await load();
       setShared(fresh);
+      return { shareToken: data.shareToken ?? null };
     },
     [],
   );

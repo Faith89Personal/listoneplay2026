@@ -6,7 +6,7 @@ import { useSession } from "@/lib/useSession";
 import { formatRangeShort, EVENT_DAYS, utcIsoToRomeParts } from "@/lib/eventDays";
 
 type JoinReservation = {
-  itemId: number;
+  itemId?: number;
   itemName: string;
   editor: string;
   stand: string | null;
@@ -33,7 +33,11 @@ type Viewer = {
   isJoined: boolean;
 };
 
-type Payload = { reservation: JoinReservation; viewer: Viewer };
+type Payload = {
+  kind?: "reservation" | "manual";
+  reservation: JoinReservation;
+  viewer: Viewer;
+};
 
 export default function JoinReservationView({ token }: { token: string }) {
   const session = useSession();
@@ -47,22 +51,31 @@ export default function JoinReservationView({ token }: { token: string }) {
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
+  const [kind, setKind] = useState<"reservation" | "manual" | null>(null);
+
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/reservations/r/${token}`, {
+      // try reservation first, then manual event
+      const resRes = await fetch(`/api/reservations/r/${token}`, {
         cache: "no-store",
       });
-      if (res.status === 404) {
-        setNotFound(true);
+      if (resRes.ok) {
+        const json = (await resRes.json()) as Payload;
+        setData(json);
+        setKind("reservation");
         return;
       }
-      if (!res.ok) {
-        setNotFound(true);
+      const manRes = await fetch(`/api/manual-events/r/${token}`, {
+        cache: "no-store",
+      });
+      if (manRes.ok) {
+        const json = (await manRes.json()) as Payload;
+        setData(json);
+        setKind("manual");
         return;
       }
-      const json = (await res.json()) as Payload;
-      setData(json);
+      setNotFound(true);
     } finally {
       setLoading(false);
     }
@@ -72,13 +85,14 @@ export default function JoinReservationView({ token }: { token: string }) {
     void reload();
   }, [reload, session.email]);
 
+  const apiBase =
+    kind === "manual" ? "/api/manual-events/r" : "/api/reservations/r";
+
   async function handleJoin() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/reservations/r/${token}`, {
-        method: "POST",
-      });
+      const res = await fetch(`${apiBase}/${token}`, { method: "POST" });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(j.error || `http_${res.status}`);
@@ -95,7 +109,7 @@ export default function JoinReservationView({ token }: { token: string }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/reservations/r/${token}`, {
+      const res = await fetch(`${apiBase}/${token}`, {
         method: "DELETE",
       });
       if (!res.ok) {

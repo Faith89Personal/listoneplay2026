@@ -35,6 +35,11 @@ type Props = {
   onClose: () => void;
 };
 
+function emailToName(email: string): string {
+  const at = email.indexOf("@");
+  return at > 0 ? email.slice(0, at) : email;
+}
+
 export default function ManualEventModal({
   existing,
   allBlocks,
@@ -53,11 +58,18 @@ export default function ManualEventModal({
   );
   const [stand, setStand] = useState<string>(existing?.stand ?? "");
   const [note, setNote] = useState<string>(existing?.note ?? "");
+  const [maxSeats, setMaxSeats] = useState<number | null>(
+    existing?.maxSeats ?? null,
+  );
+  const [guests, setGuests] = useState<string[]>(existing?.guests ?? []);
+  const [guestInput, setGuestInput] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overlapsPending, setOverlapsPending] = useState<
     CalendarBlock[] | null
   >(null);
+  const [savedToken, setSavedToken] = useState<string | null>(null);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -80,15 +92,17 @@ export default function ManualEventModal({
     setBusy(true);
     setError(null);
     try {
-      await save({
+      const result = await save({
         id: existing?.id,
         name: name.trim(),
         reservedAt: candidate.reservedAt,
         durationMinutes: duration,
         stand: stand.trim() || null,
         note: note.trim() || null,
+        maxSeats: maxSeats,
+        guests,
       });
-      onClose();
+      setSavedToken(result.shareToken ?? existing?.shareToken ?? null);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -123,13 +137,218 @@ export default function ManualEventModal({
     }
   }
 
+  async function handleLeaveShared() {
+    if (!existing?.shareToken) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/manual-events/r/${existing.shareToken}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error || `http_${res.status}`);
+      }
+      onClose();
+      if (typeof window !== "undefined") window.location.reload();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runShare(shareToken: string) {
+    setShareBusy(true);
+    try {
+      const url = `${window.location.origin}/r/${shareToken}`;
+      const dayLabel =
+        EVENT_DAYS.find(
+          (d) => d.date === utcIsoToRomeParts(candidate.reservedAt).date,
+        )?.short ?? "";
+      const range = formatRangeShort(candidate.reservedAt, duration);
+      const seatLine =
+        maxSeats !== null
+          ? `\n👥 ${1 + guests.length}/${maxSeats} posti occupati`
+          : "";
+      const standLine = stand.trim() ? `\n📍 ${stand.trim()}` : "";
+      const text =
+        `🎲 ${name.trim() || "Evento"}` +
+        standLine +
+        `\n📅 ${dayLabel} ${range}` +
+        seatLine +
+        `\n\nUnisciti 👉 ${url}`;
+      if (typeof navigator !== "undefined" && navigator.share) {
+        try {
+          await navigator.share({ text });
+          return;
+        } catch {
+          // fall through
+        }
+      }
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        alert("Messaggio copiato negli appunti");
+      }
+    } finally {
+      setShareBusy(false);
+    }
+  }
+
+  const isShared = !!existing && !existing.isOwner;
+
+  if (savedToken !== null) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+        onClick={onClose}
+      >
+        <div
+          className="w-full max-w-md rounded-t-xl bg-white p-5 shadow-xl sm:rounded-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+              <svg viewBox="0 0 24 24" className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="5 13 10 18 19 7" />
+              </svg>
+            </div>
+            <h2 className="text-base font-semibold text-neutral-900">
+              Evento salvato
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              Vuoi condividerlo subito su WhatsApp?
+            </p>
+          </div>
+          <div className="mt-5 space-y-2">
+            <button
+              type="button"
+              disabled={shareBusy}
+              onClick={async () => {
+                await runShare(savedToken);
+                onClose();
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white active:bg-emerald-700 disabled:opacity-60"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              {shareBusy ? "…" : "Sì, condividi"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-700"
+            >
+              No grazie, chiudi
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isShared) {
+    const ownerName = existing?.ownerEmail ? emailToName(existing.ownerEmail) : "qualcuno";
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+        onClick={onClose}
+      >
+        <div
+          className="w-full max-w-md rounded-t-xl bg-white p-4 shadow-xl sm:rounded-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-3 flex items-start gap-2">
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-sky-700">Evento condiviso</h2>
+              <p className="line-clamp-2 text-sm text-neutral-700">{existing.name}</p>
+              <p className="text-xs text-neutral-500">
+                Da <span className="font-semibold">{ownerName}</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Chiudi"
+              onClick={onClose}
+              className="rounded p-1 text-neutral-500 active:bg-neutral-100"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="space-y-2 text-sm text-neutral-800">
+            <p>
+              📅{" "}
+              {(EVENT_DAYS.find(
+                (d) => d.date === utcIsoToRomeParts(existing.reservedAt).date,
+              )?.long ?? "")}{" "}
+              ·{" "}
+              {formatRangeShort(existing.reservedAt, existing.durationMinutes)}
+            </p>
+            {existing.stand && <p>📍 {existing.stand}</p>}
+            {existing.maxSeats !== null && (
+              <p className="text-amber-700">
+                👥{" "}
+                {1 + existing.sharedWith.length + existing.guests.length}/
+                {existing.maxSeats} posti occupati
+              </p>
+            )}
+            {(existing.sharedWith.length > 0 ||
+              existing.guests.length > 0) && (
+              <p className="text-xs text-neutral-600">
+                Insieme a te:{" "}
+                {[
+                  ...existing.sharedWith
+                    .filter((e) => e !== existing.ownerEmail)
+                    .map(emailToName),
+                  ...existing.guests.map((g) => `${g} (guest)`),
+                ].join(", ")}
+              </p>
+            )}
+            {existing.note && (
+              <p className="rounded-md bg-neutral-50 p-2 text-xs italic text-neutral-700">
+                &laquo;{existing.note}&raquo;
+              </p>
+            )}
+          </div>
+          {error && (
+            <p className="mt-3 rounded bg-red-50 px-2 py-1 text-xs text-red-700">
+              Errore: {error}
+            </p>
+          )}
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={handleLeaveShared}
+              className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 active:bg-red-50 disabled:opacity-50"
+            >
+              {busy ? "…" : "Rimuovi dal mio calendario"}
+            </button>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-white"
+            >
+              Chiudi
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-t-xl bg-white p-4 shadow-xl sm:rounded-xl"
+        className="w-full max-w-md rounded-t-2xl bg-white p-4 shadow-2xl sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-start gap-2">
@@ -258,6 +477,93 @@ export default function ManualEventModal({
               />
             </label>
 
+            <div>
+              <span className="mb-1 block text-xs font-medium text-neutral-600">
+                Posti totali (opzionale)
+              </span>
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const active = maxSeats === n;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setMaxSeats(active ? null : n)}
+                      className={
+                        "flex-1 rounded-md border py-1.5 text-sm font-medium " +
+                        (active
+                          ? "border-brand-dark bg-brand text-white"
+                          : "border-neutral-300 bg-white text-neutral-700")
+                      }
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <span className="mb-1 block text-xs font-medium text-neutral-600">
+                Guest (opzionale)
+              </span>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={guestInput}
+                  onChange={(e) => setGuestInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      const v = guestInput.trim();
+                      if (v && !guests.includes(v) && guests.length < 20) {
+                        setGuests([...guests, v]);
+                      }
+                      setGuestInput("");
+                    }
+                  }}
+                  maxLength={80}
+                  placeholder="es. Marco · invio per aggiungere"
+                  className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = guestInput.trim();
+                    if (v && !guests.includes(v) && guests.length < 20) {
+                      setGuests([...guests, v]);
+                    }
+                    setGuestInput("");
+                  }}
+                  className="rounded-md bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-700"
+                >
+                  +
+                </button>
+              </div>
+              {guests.length > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {guests.map((g) => (
+                    <li
+                      key={g}
+                      className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 text-xs text-neutral-800"
+                    >
+                      {g}
+                      <button
+                        type="button"
+                        aria-label={`Rimuovi ${g}`}
+                        onClick={() =>
+                          setGuests(guests.filter((x) => x !== g))
+                        }
+                        className="text-neutral-500"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-neutral-600">
                 Nota (opzionale)
@@ -271,6 +577,34 @@ export default function ManualEventModal({
                 className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
               />
             </label>
+
+            {existing?.shareToken && existing.isOwner && (
+              <button
+                type="button"
+                disabled={shareBusy}
+                onClick={() => runShare(existing.shareToken!)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white active:bg-emerald-700 disabled:opacity-60"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+                {shareBusy ? "…" : "Condividi su WhatsApp"}
+              </button>
+            )}
+
+            {existing &&
+              existing.isOwner &&
+              (existing.sharedWith.length > 0 || existing.guests.length > 0) && (
+                <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
+                  <span className="font-semibold">Partecipanti:</span>{" "}
+                  {[
+                    ...existing.sharedWith.map(emailToName),
+                    ...existing.guests.map((g) => `${g} (guest)`),
+                  ].join(", ")}
+                </p>
+              )}
 
             {error && (
               <p
