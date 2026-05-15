@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { Item } from "@/types";
 import { useSelections } from "@/lib/storage";
+import { useItems } from "@/lib/useItems";
 import GameRow from "@/components/GameRow";
 import { SearchIcon, CloseIcon, MenuIcon } from "@/components/icons";
 
@@ -13,7 +14,10 @@ function buildSections(items: Item[]): Section[] {
   for (const item of items) {
     let s = byCat.get(item.category.id);
     if (!s) {
-      s = { category: { id: item.category.id, name: item.category.name }, items: [] };
+      s = {
+        category: { id: item.category.id, name: item.category.name },
+        items: [],
+      };
       byCat.set(item.category.id, s);
     }
     s.items.push(item);
@@ -22,8 +26,10 @@ function buildSections(items: Item[]): Section[] {
     s.items.sort((a, b) => a.name.localeCompare(b.name, "it"));
   }
   return [...byCat.values()].sort((a, b) => {
-    const ao = items.find((i) => i.category.id === a.category.id)!.category.ordering;
-    const bo = items.find((i) => i.category.id === b.category.id)!.category.ordering;
+    const ao = items.find((i) => i.category.id === a.category.id)!.category
+      .ordering;
+    const bo = items.find((i) => i.category.id === b.category.id)!.category
+      .ordering;
     return ao - bo;
   });
 }
@@ -32,11 +38,14 @@ function normalize(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-export default function GameList({ items }: { items: Item[] }) {
+export default function GameList() {
+  const { data, loading, error, stale, refresh } = useItems();
   const { selections, toggle, hydrated } = useSelections();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
+
+  const items = data?.items ?? [];
 
   const sections = useMemo(() => buildSections(items), [items]);
 
@@ -69,6 +78,8 @@ export default function GameList({ items }: { items: Item[] }) {
     }
   }
 
+  const showEmptyState = !loading && items.length === 0;
+
   return (
     <>
       <header
@@ -91,8 +102,13 @@ export default function GameList({ items }: { items: Item[] }) {
           <div className="flex flex-1 flex-col leading-tight">
             <span className="text-base font-bold">Listone Play 2026</span>
             <span className="text-[11px] opacity-80">
-              {totalShown} di {items.length} titoli
-              {selectedCount > 0 ? ` Â· ${selectedCount} selezionati` : ""}
+              {items.length > 0
+                ? `${totalShown} di ${items.length} titoli`
+                : loading
+                  ? "Carico…"
+                  : "Lista non disponibile"}
+              {selectedCount > 0 ? ` · ${selectedCount} selezionati` : ""}
+              {stale ? " · cache" : ""}
             </span>
           </div>
         </div>
@@ -107,7 +123,7 @@ export default function GameList({ items }: { items: Item[] }) {
               spellCheck={false}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cerca titolo o editoreâ€¦"
+              placeholder="Cerca titolo o editore…"
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-neutral-400"
             />
             {query && (
@@ -144,7 +160,30 @@ export default function GameList({ items }: { items: Item[] }) {
       </header>
 
       <main className="mx-auto max-w-2xl px-3 pb-24 pt-3">
-        {filteredSections.length === 0 && (
+        {loading && items.length === 0 && (
+          <p className="px-3 py-12 text-center text-sm text-neutral-500">
+            Carico la lista…
+          </p>
+        )}
+
+        {showEmptyState && (
+          <div className="px-3 py-10 text-center">
+            <p className="text-sm text-neutral-600">
+              {error
+                ? "Impossibile contattare il server."
+                : "Nessun dato disponibile."}
+            </p>
+            <button
+              type="button"
+              onClick={refresh}
+              className="mt-3 rounded bg-brand px-4 py-2 text-sm font-medium text-white shadow"
+            >
+              Riprova
+            </button>
+          </div>
+        )}
+
+        {!showEmptyState && filteredSections.length === 0 && items.length > 0 && (
           <p className="px-3 py-12 text-center text-sm text-neutral-500">
             Nessun titolo trovato.
           </p>
@@ -158,7 +197,7 @@ export default function GameList({ items }: { items: Item[] }) {
             }}
             className="mb-6 scroll-mt-28"
           >
-            <h2 className="sticky top-[var(--app-header-h,7.5rem)] z-20 -mx-3 mb-2 bg-brand-dark px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white">
+            <h2 className="-mx-3 mb-2 bg-brand-dark px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white">
               {s.category.name}{" "}
               <span className="font-normal opacity-80">
                 ({s.items.length})
@@ -181,4 +220,3 @@ export default function GameList({ items }: { items: Item[] }) {
     </>
   );
 }
-
