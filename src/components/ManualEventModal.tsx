@@ -180,7 +180,7 @@ export default function ManualEventModal({
       const range = formatRangeShort(candidate.reservedAt, duration);
       const seatLine =
         maxSeats !== null
-          ? `\n👥 ${1 + guests.length}/${maxSeats} posti occupati`
+          ? `\n👥 ${1 + sharedWith.length + guests.length}/${maxSeats} posti occupati`
           : "";
       const standLine = stand.trim() ? `\n📍 ${stand.trim()}` : "";
       const text =
@@ -520,39 +520,57 @@ export default function ManualEventModal({
               <span className="mb-1 block text-xs font-medium text-neutral-600">
                 Guest (opzionale)
               </span>
-              <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  value={guestInput}
-                  onChange={(e) => setGuestInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === ",") {
-                      e.preventDefault();
-                      const v = guestInput.trim() || nextGuestPlaceholder(guests);
-                      if (!guests.includes(v) && guests.length < 20) {
-                        setGuests([...guests, v]);
-                      }
-                      setGuestInput("");
-                    }
-                  }}
-                  maxLength={80}
-                  placeholder="es. Marco · invio per aggiungere"
-                  className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const v = guestInput.trim() || nextGuestPlaceholder(guests);
-                    if (!guests.includes(v) && guests.length < 20) {
-                      setGuests([...guests, v]);
-                    }
-                    setGuestInput("");
-                  }}
-                  className="rounded-md bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-700"
-                >
-                  +
-                </button>
-              </div>
+              {(() => {
+                const occupied = 1 + sharedWith.length + guests.length;
+                const full = maxSeats !== null && occupied >= maxSeats;
+                const tryAdd = () => {
+                  if (full) return;
+                  const v = guestInput.trim() || nextGuestPlaceholder(guests);
+                  if (!guests.includes(v) && guests.length < 20) {
+                    setGuests([...guests, v]);
+                  }
+                  setGuestInput("");
+                };
+                return (
+                  <>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={guestInput}
+                        onChange={(e) => setGuestInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === ",") {
+                            e.preventDefault();
+                            tryAdd();
+                          }
+                        }}
+                        maxLength={80}
+                        placeholder={
+                          full
+                            ? "Posti pieni"
+                            : "es. Marco · invio per aggiungere"
+                        }
+                        disabled={full}
+                        className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm disabled:bg-neutral-100 disabled:text-neutral-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={tryAdd}
+                        disabled={full}
+                        className="rounded-md bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-700 disabled:opacity-50"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {full && (
+                      <p className="mt-1 text-[11px] text-amber-700">
+                        Posti pieni ({occupied}/{maxSeats}). Aumenta i posti
+                        totali oppure rimuovi un partecipante.
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
               {guests.length > 0 && (
                 <ul className="mt-2 flex flex-wrap gap-1.5">
                   {guests.map((g) => (
@@ -663,7 +681,11 @@ export default function ManualEventModal({
                 role="alert"
                 className="rounded bg-red-50 px-2 py-1 text-xs text-red-700"
               >
-                {error === "invalid_name" ? "Il nome è obbligatorio" : `Errore: ${error}`}
+                {error === "invalid_name"
+                  ? "Il nome è obbligatorio"
+                  : error === "exceeds_max_seats"
+                    ? "Troppi partecipanti per i posti totali impostati."
+                    : `Errore: ${error}`}
               </p>
             )}
 

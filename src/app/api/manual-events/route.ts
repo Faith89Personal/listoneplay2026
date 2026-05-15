@@ -157,6 +157,30 @@ export async function POST(req: Request) {
 
   try {
     const sql = requireSql();
+
+    if (maxSeats !== null) {
+      let effective: string[];
+      if (sharedWithFromBody !== null) {
+        effective = sharedWithFromBody;
+      } else if (id !== null) {
+        const existRows = (await sql`
+          SELECT shared_with FROM manual_events
+          WHERE id = ${id} AND email = ${session.email}
+          LIMIT 1
+        `) as { shared_with: string[] | null }[];
+        effective = existRows[0]?.shared_with ?? [];
+      } else {
+        effective = [];
+      }
+      const occupancy = 1 + effective.length + guests.length;
+      if (occupancy > maxSeats) {
+        return NextResponse.json(
+          { error: "exceeds_max_seats", occupancy, maxSeats },
+          { status: 400 },
+        );
+      }
+    }
+
     if (id !== null) {
       const updated = (await sql`
         UPDATE manual_events SET
