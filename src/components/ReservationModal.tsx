@@ -54,7 +54,11 @@ export default function ReservationModal({
     existing?.durationMinutes ?? 60,
   );
   const [note, setNote] = useState<string>(existing?.note ?? "");
+  const [maxSeats, setMaxSeats] = useState<string>(
+    existing?.maxSeats ? String(existing.maxSeats) : "",
+  );
   const [busy, setBusy] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overlapsPending, setOverlapsPending] = useState<
     CalendarBlock[] | null
@@ -81,11 +85,18 @@ export default function ReservationModal({
     setBusy(true);
     setError(null);
     try {
+      const seatsNum = Number(maxSeats);
+      const seatsValid =
+        maxSeats.trim().length > 0 &&
+        Number.isFinite(seatsNum) &&
+        seatsNum >= 2 &&
+        seatsNum <= 20;
       await save({
         itemId: item.id,
         reservedAt: candidate.reservedAt,
         durationMinutes: duration,
         note: note.trim() || null,
+        maxSeats: seatsValid ? Math.round(seatsNum) : null,
       });
       onClose();
     } catch (err) {
@@ -223,6 +234,22 @@ export default function ReservationModal({
 
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-neutral-600">
+                Posti totali (opzionale, per il messaggio di condivisione)
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={2}
+                max={20}
+                value={maxSeats}
+                onChange={(e) => setMaxSeats(e.target.value)}
+                placeholder="es. 4"
+                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-neutral-600">
                 Nota (opzionale)
               </span>
               <textarea
@@ -234,6 +261,63 @@ export default function ReservationModal({
                 className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
               />
             </label>
+
+            {existing?.shareToken && existing.isOwner && (
+              <button
+                type="button"
+                disabled={shareBusy}
+                onClick={async () => {
+                  setShareBusy(true);
+                  try {
+                    const url = `${window.location.origin}/r/${existing.shareToken}`;
+                    const dayLabel =
+                      EVENT_DAYS.find(
+                        (d) =>
+                          d.date === utcIsoToRomeParts(existing.reservedAt).date,
+                      )?.short ?? "";
+                    const range = formatRangeShort(
+                      existing.reservedAt,
+                      existing.durationMinutes,
+                    );
+                    const occupied = 1 + existing.sharedWith.length;
+                    const seatsLine =
+                      existing.maxSeats
+                        ? `\n👥 ${occupied}/${existing.maxSeats} posti occupati`
+                        : "";
+                    const text =
+                      `🎲 Sto prenotando: ${item.name}\n` +
+                      `📅 ${dayLabel} ${range}` +
+                      seatsLine +
+                      `\n\nUnisciti 👉 ${url}`;
+                    if (typeof navigator !== "undefined" && navigator.share) {
+                      try {
+                        await navigator.share({ text });
+                        return;
+                      } catch {
+                        // fall back to clipboard
+                      }
+                    }
+                    if (
+                      typeof navigator !== "undefined" &&
+                      navigator.clipboard
+                    ) {
+                      await navigator.clipboard.writeText(text);
+                      alert("Messaggio copiato negli appunti");
+                    }
+                  } finally {
+                    setShareBusy(false);
+                  }
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white active:bg-emerald-700 disabled:opacity-60"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+                {shareBusy ? "…" : "Condividi su WhatsApp"}
+              </button>
+            )}
 
             {error && (
               <p

@@ -33,6 +33,10 @@ const statements = [
     PRIMARY KEY (email, item_id)
   )`,
   `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER NOT NULL DEFAULT 60`,
+  `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS share_token TEXT`,
+  `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS max_seats INTEGER`,
+  `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS shared_with TEXT[] NOT NULL DEFAULT '{}'`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS reservations_share_token_idx ON reservations (share_token) WHERE share_token IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS manual_events (
     id SERIAL PRIMARY KEY,
     email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,

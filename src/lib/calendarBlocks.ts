@@ -15,6 +15,8 @@ export type CalendarBlock = {
   note: string | null;
   itemId: number | null;
   manualId: number | null;
+  shared?: boolean;
+  ownerEmail?: string;
 };
 
 export function reservationKey(itemId: number): string {
@@ -30,7 +32,7 @@ export function reservationToBlock(
   stands: string[],
 ): CalendarBlock {
   return {
-    key: reservationKey(r.itemId),
+    key: reservationKey(r.itemId) + "/" + r.ownerEmail,
     kind: "reservation",
     reservedAt: r.reservedAt,
     durationMinutes: r.durationMinutes,
@@ -40,6 +42,8 @@ export function reservationToBlock(
     note: r.note,
     itemId: r.itemId,
     manualId: null,
+    shared: !r.isOwner,
+    ownerEmail: r.ownerEmail,
   };
 }
 
@@ -55,6 +59,7 @@ export function manualToBlock(e: ManualEvent): CalendarBlock {
     note: e.note,
     itemId: null,
     manualId: e.id,
+    shared: false,
   };
 }
 

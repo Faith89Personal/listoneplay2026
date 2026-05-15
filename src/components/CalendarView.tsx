@@ -249,13 +249,18 @@ export default function CalendarView() {
                   {list.map((b) => {
                     const isTall = b.heightPx >= 60;
                     const isManual = b.kind === "manual";
+                    const isShared = !!b.shared;
                     const base = b.overlapping
                       ? isManual
                         ? "bg-indigo-400 ring-1 ring-amber-500 text-white"
-                        : "bg-brand ring-1 ring-amber-500 text-white"
+                        : isShared
+                          ? "bg-sky-500 ring-1 ring-amber-500 text-white"
+                          : "bg-brand ring-1 ring-amber-500 text-white"
                       : isManual
                         ? "bg-indigo-500 text-white"
-                        : "bg-brand text-white";
+                        : isShared
+                          ? "bg-sky-600 text-white"
+                          : "bg-brand text-white";
                     const leftPct = (b.laneIndex / b.laneCount) * 100;
                     const rightPct =
                       ((b.laneCount - 1 - b.laneIndex) / b.laneCount) * 100;

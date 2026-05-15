@@ -8,6 +8,11 @@ export type Reservation = {
   reservedAt: string; // ISO UTC
   durationMinutes: number;
   note: string | null;
+  shareToken: string | null;
+  maxSeats: number | null;
+  sharedWith: string[];
+  ownerEmail: string;
+  isOwner: boolean;
 };
 
 export type ReservationsState = {
@@ -101,6 +106,7 @@ export function useReservations() {
       reservedAt: string;
       durationMinutes: number;
       note: string | null;
+      maxSeats: number | null;
     }) => {
       const res = await fetch("/api/reservations", {
         method: "POST",

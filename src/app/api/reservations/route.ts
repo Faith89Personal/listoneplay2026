@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import { requireSql } from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/session";
 
@@ -6,11 +7,29 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type ReservationRow = {
+  email: string;
   item_id: number;
   reserved_at: string;
   duration_minutes: number;
   note: string | null;
+  share_token: string | null;
+  max_seats: number | null;
+  shared_with: string[] | null;
 };
+
+function rowToJson(r: ReservationRow, currentEmail: string) {
+  return {
+    itemId: r.item_id,
+    reservedAt: r.reserved_at,
+    durationMinutes: r.duration_minutes,
+    note: r.note,
+    shareToken: r.share_token,
+    maxSeats: r.max_seats,
+    sharedWith: r.shared_with ?? [],
+    ownerEmail: r.email,
+    isOwner: r.email === currentEmail,
+  };
+}
 
 export async function GET() {
   const session = await getSessionFromCookies();
@@ -20,17 +39,15 @@ export async function GET() {
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT item_id, reserved_at, duration_minutes, note
-      FROM reservations WHERE email = ${session.email}
+      SELECT email, item_id, reserved_at, duration_minutes, note,
+             share_token, max_seats, shared_with
+      FROM reservations
+      WHERE email = ${session.email}
+         OR ${session.email} = ANY(shared_with)
       ORDER BY reserved_at ASC
     `) as ReservationRow[];
     return NextResponse.json({
-      reservations: rows.map((r) => ({
-        itemId: r.item_id,
-        reservedAt: r.reserved_at,
-        durationMinutes: r.duration_minutes,
-        note: r.note,
-      })),
+      reservations: rows.map((r) => rowToJson(r, session.email)),
     });
   } catch (err) {
     return NextResponse.json(
@@ -45,7 +62,12 @@ type UpsertBody = {
   reservedAt?: unknown;
   durationMinutes?: unknown;
   note?: unknown;
+  maxSeats?: unknown;
 };
+
+function newShareToken(): string {
+  return randomBytes(6).toString("hex");
+}
 
 export async function POST(req: Request) {
   const session = await getSessionFromCookies();
@@ -79,18 +101,36 @@ export async function POST(req: Request) {
     typeof body.note === "string" && body.note.length > 0
       ? body.note.slice(0, 500)
       : null;
+  const maxSeats =
+    typeof body.maxSeats === "number" &&
+    body.maxSeats >= 2 &&
+    body.maxSeats <= 20
+      ? Math.round(body.maxSeats)
+      : null;
+  const candidateToken = newShareToken();
   try {
     const sql = requireSql();
-    await sql`
-      INSERT INTO reservations (email, item_id, reserved_at, duration_minutes, note, updated_at)
-      VALUES (${session.email}, ${itemId}, ${parsed.toISOString()}, ${duration}, ${note}, NOW())
+    const rows = (await sql`
+      INSERT INTO reservations
+        (email, item_id, reserved_at, duration_minutes, note, max_seats,
+         share_token, updated_at)
+      VALUES
+        (${session.email}, ${itemId}, ${parsed.toISOString()}, ${duration},
+         ${note}, ${maxSeats}, ${candidateToken}, NOW())
       ON CONFLICT (email, item_id)
       DO UPDATE SET reserved_at = EXCLUDED.reserved_at,
                     duration_minutes = EXCLUDED.duration_minutes,
                     note = EXCLUDED.note,
+                    max_seats = EXCLUDED.max_seats,
+                    share_token = COALESCE(reservations.share_token,
+                                           EXCLUDED.share_token),
                     updated_at = NOW()
-    `;
-    return NextResponse.json({ ok: true });
+      RETURNING share_token
+    `) as { share_token: string }[];
+    return NextResponse.json({
+      ok: true,
+      shareToken: rows[0]?.share_token ?? null,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: "db_unavailable", detail: (err as Error).message },
