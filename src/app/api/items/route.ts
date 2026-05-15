@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import snapshot from "@/data/items.json";
 
 const UPSTREAM = "https://list.giochisulnostrotavolo.it/be/public/api/items";
 const BROWSER_UA =
@@ -15,22 +16,22 @@ export async function GET() {
         "User-Agent": BROWSER_UA,
       },
     });
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: `upstream_${res.status}` },
-        { status: 502 },
-      );
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data, {
+        headers: {
+          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=86400",
+          "X-Data-Source": "upstream",
+        },
+      });
     }
-    const data = await res.json();
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "public, s-maxage=600, stale-while-revalidate=86400",
-      },
-    });
-  } catch (err) {
-    return NextResponse.json(
-      { error: "upstream_unreachable", detail: (err as Error).message },
-      { status: 502 },
-    );
+  } catch {
+    // fall through to snapshot
   }
+  return NextResponse.json(snapshot, {
+    headers: {
+      "Cache-Control": "public, s-maxage=600, stale-while-revalidate=86400",
+      "X-Data-Source": "snapshot",
+    },
+  });
 }
