@@ -35,6 +35,8 @@ type Positioned = CalendarBlock & {
   startTime: string;
   endTime: string;
   overlapping: boolean;
+  laneIndex: number;
+  laneCount: number;
 };
 
 function positionByDay(blocks: CalendarBlock[]): Map<string, Positioned[]> {
@@ -56,21 +58,46 @@ function positionByDay(blocks: CalendarBlock[]): Map<string, Positioned[]> {
       startTime: p.time,
       endTime: endParts.time,
       overlapping: false,
+      laneIndex: 0,
+      laneCount: 1,
     });
   }
   for (const list of out.values()) {
-    list.sort((a, b) => a.topPx - b.topPx);
+    list.sort((a, b) => a.topPx - b.topPx || b.heightPx - a.heightPx);
+    // Mark overlapping flag per block
     for (let i = 0; i < list.length; i++) {
       const a = list[i];
+      const aEnd = a.topPx + a.heightPx;
       for (let j = i + 1; j < list.length; j++) {
         const b = list[j];
-        if (b.topPx < a.topPx + a.heightPx) {
-          a.overlapping = true;
-          b.overlapping = true;
-        } else {
-          break;
-        }
+        if (b.topPx >= aEnd) break;
+        a.overlapping = true;
+        b.overlapping = true;
       }
+    }
+    // Assign lanes per overlap-cluster
+    let i = 0;
+    while (i < list.length) {
+      let clusterEnd = list[i].topPx + list[i].heightPx;
+      let j = i + 1;
+      while (j < list.length && list[j].topPx < clusterEnd) {
+        clusterEnd = Math.max(clusterEnd, list[j].topPx + list[j].heightPx);
+        j++;
+      }
+      const laneEnds: number[] = [];
+      for (let k = i; k < j; k++) {
+        const b = list[k];
+        let lane = laneEnds.findIndex((end) => end <= b.topPx);
+        if (lane === -1) {
+          lane = laneEnds.length;
+          laneEnds.push(0);
+        }
+        laneEnds[lane] = b.topPx + b.heightPx;
+        b.laneIndex = lane;
+      }
+      const laneCount = laneEnds.length;
+      for (let k = i; k < j; k++) list[k].laneCount = laneCount;
+      i = j;
     }
   }
   return out;
@@ -223,10 +250,15 @@ export default function CalendarView() {
                     const isTall = b.heightPx >= 60;
                     const isManual = b.kind === "manual";
                     const base = b.overlapping
-                      ? "bg-amber-200 ring-1 ring-amber-500 text-amber-900"
+                      ? isManual
+                        ? "bg-indigo-400 ring-1 ring-amber-500 text-white"
+                        : "bg-brand ring-1 ring-amber-500 text-white"
                       : isManual
                         ? "bg-indigo-500 text-white"
                         : "bg-brand text-white";
+                    const leftPct = (b.laneIndex / b.laneCount) * 100;
+                    const rightPct =
+                      ((b.laneCount - 1 - b.laneIndex) / b.laneCount) * 100;
                     return (
                       <button
                         key={b.key}
@@ -245,9 +277,11 @@ export default function CalendarView() {
                         style={{
                           top: b.topPx,
                           height: Math.max(20, b.heightPx),
+                          left: `calc(${leftPct}% + 1px)`,
+                          right: `calc(${rightPct}% + 1px)`,
                         }}
                         className={
-                          "absolute inset-x-0 mx-0.5 overflow-hidden rounded px-1.5 py-0.5 text-left text-[10px] leading-tight shadow-sm " +
+                          "absolute overflow-hidden rounded px-1.5 py-0.5 text-left text-[10px] leading-tight shadow-sm " +
                           base
                         }
                       >
