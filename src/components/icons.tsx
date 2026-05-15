@@ -86,6 +86,25 @@ export function MenuIcon(props: IconProps) {
   );
 }
 
+export function AlarmIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="13" r="8" />
+      <polyline points="12 9 12 13 14.5 14.5" />
+      <line x1="5" y1="3" x2="2.5" y2="5.5" />
+      <line x1="19" y1="3" x2="21.5" y2="5.5" />
+    </svg>
+  );
+}
+
 export function CalendarIcon(props: IconProps) {
   return (
     <svg

@@ -6,9 +6,11 @@ import type { EditorsSnapshot, Item } from "@/types";
 import { useSelections, type Selections } from "@/lib/storage";
 import { useItems } from "@/lib/useItems";
 import { useReservations, type Reservation } from "@/lib/useReservations";
+import { EVENT_DAYS, utcIsoToRomeParts } from "@/lib/eventDays";
 import { useManualEvents } from "@/lib/useManualEvents";
 import { usePlays, type Play } from "@/lib/usePlays";
 import { useManualItems, type ManualItem } from "@/lib/useManualItems";
+import { useRushes } from "@/lib/useRushes";
 import {
   type CalendarBlock,
   manualToBlock,
@@ -19,6 +21,7 @@ import AuthBar from "@/components/AuthBar";
 import ReservationModal from "@/components/ReservationModal";
 import PlayedModal from "@/components/PlayedModal";
 import ManualItemModal from "@/components/ManualItemModal";
+import RushModal from "@/components/RushModal";
 import ThemePicker from "@/components/ThemePicker";
 import {
   SearchIcon,
@@ -29,6 +32,7 @@ import {
   BuyIcon,
   CalendarIcon,
   StarIcon,
+  AlarmIcon,
 } from "@/components/icons";
 
 type EditorGroup = {
@@ -192,11 +196,13 @@ export default function GameList() {
   const manualState = useManualEvents();
   const playsState = usePlays();
   const manualItemsState = useManualItems();
+  const rushesState = useRushes();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [reservingItem, setReservingItem] = useState<Item | null>(null);
   const [ratingItem, setRatingItem] = useState<Item | null>(null);
+  const [rushingItem, setRushingItem] = useState<Item | null>(null);
   const [editingManual, setEditingManual] = useState<ManualItem | null>(null);
   const [creatingManual, setCreatingManual] = useState(false);
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
@@ -212,6 +218,29 @@ export default function GameList() {
     for (const p of playsState.plays) m.set(p.itemId, p);
     return m;
   }, [playsState.plays]);
+
+  const rushDaysByItem = useMemo(() => {
+    const m = new Map<number, string[]>();
+    for (const r of rushesState.rushes) {
+      const list = m.get(r.itemId) ?? [];
+      list.push(r.day);
+      m.set(r.itemId, list);
+    }
+    return m;
+  }, [rushesState.rushes]);
+
+  const morningRushBanner = useMemo(() => {
+    if (!rushesState.loggedIn) return null;
+    const nowRome = utcIsoToRomeParts(new Date().toISOString());
+    const isEventDay = EVENT_DAYS.some((d) => d.date === nowRome.date);
+    if (!isEventDay) return null;
+    if (nowRome.hour >= 11) return null;
+    const todayRushes = rushesState.rushes.filter(
+      (r) => r.day === nowRome.date,
+    );
+    if (todayRushes.length === 0) return null;
+    return { count: todayRushes.length };
+  }, [rushesState.rushes, rushesState.loggedIn]);
 
   const catalogItems = data?.items ?? [];
   const items = useMemo(
@@ -326,6 +355,13 @@ export default function GameList() {
                 </svg>
               </button>
               <Link
+                href="/rush"
+                aria-label="Rush mattina"
+                className="flex items-center justify-center rounded-md bg-white/15 p-1.5 active:bg-white/25"
+              >
+                <AlarmIcon className="h-4 w-4" />
+              </Link>
+              <Link
                 href="/giocati"
                 aria-label="Giocati e votati"
                 className="flex items-center justify-center rounded-md bg-white/15 p-1.5 active:bg-white/25"
@@ -435,6 +471,25 @@ export default function GameList() {
       </header>
 
       <main className="mx-auto max-w-2xl px-3 pb-24 pt-4">
+        {morningRushBanner && (
+          <Link
+            href="/rush"
+            className="mb-4 flex items-center gap-2 rounded-2xl bg-amber-100 px-3 py-2.5 text-sm text-amber-900 shadow-sm ring-1 ring-amber-300 active:bg-amber-200"
+          >
+            <AlarmIcon className="h-5 w-5 shrink-0 text-amber-600" />
+            <span className="flex-1 leading-tight">
+              <span className="font-bold">
+                {morningRushBanner.count}{" "}
+                {morningRushBanner.count === 1 ? "stand" : "stand"} da
+                raggiungere stamattina.
+              </span>{" "}
+              Apri la lista rush.
+            </span>
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </Link>
+        )}
         {loading && items.length === 0 && (
           <p className="px-3 py-12 text-center text-sm text-neutral-500">
             Carico la lista…
@@ -525,6 +580,9 @@ export default function GameList() {
                           const mi = manualItemById.get(id);
                           if (mi) setEditingManual(mi);
                         }}
+                        rushDays={rushDaysByItem.get(it.id) ?? []}
+                        canRush={rushesState.loggedIn}
+                        onRush={(item) => setRushingItem(item)}
                       />
                     ))}
                   </ul>
@@ -560,6 +618,16 @@ export default function GameList() {
         <ManualItemModal
           existing={null}
           onClose={() => setCreatingManual(false)}
+        />
+      )}
+      {rushingItem && (
+        <RushModal
+          item={rushingItem}
+          stand={(() => {
+            const ed = editorsSnap.editors[rushingItem.editor.name];
+            return ed?.stands?.join("·") ?? null;
+          })()}
+          onClose={() => setRushingItem(null)}
         />
       )}
     </>

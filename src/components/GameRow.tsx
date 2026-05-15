@@ -3,7 +3,12 @@ import type { CellState, SelectionFlag } from "@/lib/storage";
 import type { Reservation } from "@/lib/useReservations";
 import type { Play } from "@/lib/usePlays";
 import { formatRangeShort } from "@/lib/eventDays";
-import { CalendarIcon, ForbiddenIcon, StarIcon } from "@/components/icons";
+import {
+  AlarmIcon,
+  CalendarIcon,
+  ForbiddenIcon,
+  StarIcon,
+} from "@/components/icons";
 
 type CellProps = {
   state: CellState | undefined;
@@ -55,6 +60,9 @@ type GameRowProps = {
   canRate: boolean;
   onRate: (item: Item) => void;
   onEditManual?: (itemId: number) => void;
+  rushDays: string[];
+  canRush: boolean;
+  onRush: (item: Item) => void;
 };
 
 const BOOKTYPE_LABEL: Record<string, string> = {
@@ -80,8 +88,12 @@ export default function GameRow({
   canRate,
   onRate,
   onEditManual,
+  rushDays,
+  canRush,
+  onRush,
 }: GameRowProps) {
   const isManual = item.id < 0;
+  const hasRush = rushDays.length > 0;
   const stateFor = (flag: SelectionFlag): CellState | undefined =>
     hydrated ? selected[flag] : undefined;
 
@@ -168,6 +180,26 @@ export default function GameRow({
           }
         >
           <StarIcon filled={!!play} className="h-4 w-4" />
+        </button>
+      )}
+
+      {canRush && (
+        <button
+          type="button"
+          aria-label={
+            hasRush
+              ? `Rush mattina già impostato per ${item.name}`
+              : `Imposta rush mattina per ${item.name}`
+          }
+          onClick={() => onRush(item)}
+          className={
+            "flex h-7 w-7 items-center justify-center rounded " +
+            (hasRush
+              ? "bg-amber-500 text-white"
+              : "bg-neutral-100 text-neutral-500 active:bg-neutral-200")
+          }
+        >
+          <AlarmIcon className="h-4 w-4" />
         </button>
       )}
 
