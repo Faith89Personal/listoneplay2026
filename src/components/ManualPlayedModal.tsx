@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { type ManualPlay, useManualPlays } from "@/lib/useManualPlays";
+import { EVENT_DAYS } from "@/lib/eventDays";
 import { CloseIcon, StarIcon } from "@/components/icons";
 
 type Props = {
@@ -166,17 +167,31 @@ export default function ManualPlayedModal({ existing, onClose }: Props) {
             />
           </label>
 
-          <label className="block">
+          <div>
             <span className="mb-1 block text-xs font-medium text-neutral-600">
-              Data (opzionale)
+              Giorno (opzionale)
             </span>
-            <input
-              type="date"
-              value={playedOn}
-              onChange={(e) => setPlayedOn(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
-            />
-          </label>
+            <div className="flex gap-1">
+              {EVENT_DAYS.map((d) => {
+                const active = playedOn === d.date;
+                return (
+                  <button
+                    key={d.date}
+                    type="button"
+                    onClick={() => setPlayedOn(active ? "" : d.date)}
+                    className={
+                      "flex-1 rounded-md border px-2 py-1.5 text-sm font-medium " +
+                      (active
+                        ? "border-brand-dark bg-brand text-white"
+                        : "border-neutral-300 bg-white text-neutral-700")
+                    }
+                  >
+                    {d.long}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-neutral-600">

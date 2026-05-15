@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useItems } from "@/lib/useItems";
 import { useReservations } from "@/lib/useReservations";
 import { useManualEvents, type ManualEvent } from "@/lib/useManualEvents";
+import { useManualItems } from "@/lib/useManualItems";
 import { useSession } from "@/lib/useSession";
 import {
   EVENT_CLOSE_HOUR,
@@ -87,11 +88,13 @@ export default function CalendarView() {
   const [editingManual, setEditingManual] = useState<ManualEvent | null>(null);
   const [creatingManual, setCreatingManual] = useState<boolean>(false);
 
+  const manualItemsState = useManualItems();
   const itemsById = useMemo(() => {
     const m = new Map<number, Item>();
     for (const it of data?.items ?? []) m.set(it.id, it);
+    for (const it of manualItemsState.asItems) m.set(it.id, it);
     return m;
-  }, [data]);
+  }, [data, manualItemsState.asItems]);
 
   const blocks: CalendarBlock[] = useMemo(() => {
     const editorStands = data?.editors.editors ?? {};

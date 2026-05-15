@@ -8,6 +8,7 @@ import { useItems } from "@/lib/useItems";
 import { useReservations, type Reservation } from "@/lib/useReservations";
 import { useManualEvents } from "@/lib/useManualEvents";
 import { usePlays, type Play } from "@/lib/usePlays";
+import { useManualItems, type ManualItem } from "@/lib/useManualItems";
 import {
   type CalendarBlock,
   manualToBlock,
@@ -17,6 +18,7 @@ import GameRow from "@/components/GameRow";
 import AuthBar from "@/components/AuthBar";
 import ReservationModal from "@/components/ReservationModal";
 import PlayedModal from "@/components/PlayedModal";
+import ManualItemModal from "@/components/ManualItemModal";
 import ThemePicker from "@/components/ThemePicker";
 import {
   SearchIcon,
@@ -189,11 +191,14 @@ export default function GameList() {
   const reservationsState = useReservations();
   const manualState = useManualEvents();
   const playsState = usePlays();
+  const manualItemsState = useManualItems();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [reservingItem, setReservingItem] = useState<Item | null>(null);
   const [ratingItem, setRatingItem] = useState<Item | null>(null);
+  const [editingManual, setEditingManual] = useState<ManualItem | null>(null);
+  const [creatingManual, setCreatingManual] = useState(false);
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
 
   const reservationByItem = useMemo(() => {
@@ -208,12 +213,21 @@ export default function GameList() {
     return m;
   }, [playsState.plays]);
 
-  const items = data?.items ?? [];
+  const catalogItems = data?.items ?? [];
+  const items = useMemo(
+    () => [...catalogItems, ...manualItemsState.asItems],
+    [catalogItems, manualItemsState.asItems],
+  );
   const editorsSnap: EditorsSnapshot = data?.editors ?? {
     source: "",
     generatedAt: "",
     editors: {},
   };
+  const manualItemById = useMemo(() => {
+    const m = new Map<number, ManualItem>();
+    for (const it of manualItemsState.items) m.set(it.id, it);
+    return m;
+  }, [manualItemsState.items]);
 
   const itemsById = useMemo(() => {
     const m = new Map<number, Item>();
@@ -293,6 +307,24 @@ export default function GameList() {
           </div>
           {reservationsState.loggedIn && (
             <>
+              <button
+                type="button"
+                onClick={() => setCreatingManual(true)}
+                aria-label="Aggiungi gioco manuale"
+                className="flex items-center justify-center rounded-md bg-white/15 p-1.5 active:bg-white/25"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
               <Link
                 href="/giocati"
                 aria-label="Giocati e votati"
@@ -489,6 +521,10 @@ export default function GameList() {
                         play={playByItem.get(it.id) ?? null}
                         canRate={playsState.loggedIn}
                         onRate={(item) => setRatingItem(item)}
+                        onEditManual={(id) => {
+                          const mi = manualItemById.get(id);
+                          if (mi) setEditingManual(mi);
+                        }}
                       />
                     ))}
                   </ul>
@@ -512,6 +548,18 @@ export default function GameList() {
           item={ratingItem}
           existing={playByItem.get(ratingItem.id) ?? null}
           onClose={() => setRatingItem(null)}
+        />
+      )}
+      {editingManual && (
+        <ManualItemModal
+          existing={editingManual}
+          onClose={() => setEditingManual(null)}
+        />
+      )}
+      {creatingManual && (
+        <ManualItemModal
+          existing={null}
+          onClose={() => setCreatingManual(false)}
         />
       )}
     </>

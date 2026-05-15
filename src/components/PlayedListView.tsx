@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useItems } from "@/lib/useItems";
 import { usePlays } from "@/lib/usePlays";
 import { useManualPlays, type ManualPlay } from "@/lib/useManualPlays";
+import { useManualItems } from "@/lib/useManualItems";
 import { useSession } from "@/lib/useSession";
 import PlayedModal from "@/components/PlayedModal";
 import ManualPlayedModal from "@/components/ManualPlayedModal";
@@ -64,11 +65,13 @@ export default function PlayedListView() {
   const [editingManual, setEditingManual] = useState<ManualPlay | null>(null);
   const [creatingManual, setCreatingManual] = useState(false);
 
+  const manualItemsState = useManualItems();
   const itemsById = useMemo(() => {
     const m = new Map<number, Item>();
     for (const it of data?.items ?? []) m.set(it.id, it);
+    for (const it of manualItemsState.asItems) m.set(it.id, it);
     return m;
-  }, [data]);
+  }, [data, manualItemsState.asItems]);
 
   const rows: Row[] = useMemo(() => {
     const catalog: CatalogRow[] = playsState.plays

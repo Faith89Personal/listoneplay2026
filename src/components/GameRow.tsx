@@ -54,6 +54,7 @@ type GameRowProps = {
   play: Play | null;
   canRate: boolean;
   onRate: (item: Item) => void;
+  onEditManual?: (itemId: number) => void;
 };
 
 const BOOKTYPE_LABEL: Record<string, string> = {
@@ -78,7 +79,9 @@ export default function GameRow({
   play,
   canRate,
   onRate,
+  onEditManual,
 }: GameRowProps) {
+  const isManual = item.id < 0;
   const stateFor = (flag: SelectionFlag): CellState | undefined =>
     hydrated ? selected[flag] : undefined;
 
@@ -122,6 +125,19 @@ export default function GameRow({
             >
               BGG
             </a>
+          )}
+          {isManual && onEditManual && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditManual(item.id);
+              }}
+              title="Gestisci gioco manuale"
+              className="ml-1.5 inline-block rounded bg-indigo-500 px-1 align-middle text-[9px] font-bold leading-snug text-white"
+            >
+              MANUALE
+            </button>
           )}
         </span>
         {reservation && (
