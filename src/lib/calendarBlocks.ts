@@ -59,7 +59,8 @@ export function manualToBlock(e: ManualEvent): CalendarBlock {
     note: e.note,
     itemId: null,
     manualId: e.id,
-    shared: false,
+    shared: !e.isOwner,
+    ownerEmail: e.ownerEmail,
   };
 }
 

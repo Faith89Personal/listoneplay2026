@@ -41,21 +41,30 @@ function rowToJson(r: Row, currentEmail: string) {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getSessionFromCookies();
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  const scopeAll =
+    new URL(req.url).searchParams.get("scope") === "all";
   try {
     const sql = requireSql();
-    const rows = (await sql`
-      SELECT id, email, name, reserved_at, duration_minutes, stand, note,
-             share_token, max_seats, shared_with, guests
-      FROM manual_events
-      WHERE email = ${session.email}
-         OR ${session.email} = ANY(shared_with)
-      ORDER BY reserved_at ASC
-    `) as Row[];
+    const rows = (scopeAll
+      ? await sql`
+          SELECT id, email, name, reserved_at, duration_minutes, stand, note,
+                 share_token, max_seats, shared_with, guests
+          FROM manual_events
+          ORDER BY reserved_at ASC
+        `
+      : await sql`
+          SELECT id, email, name, reserved_at, duration_minutes, stand, note,
+                 share_token, max_seats, shared_with, guests
+          FROM manual_events
+          WHERE email = ${session.email}
+             OR ${session.email} = ANY(shared_with)
+          ORDER BY reserved_at ASC
+        `) as Row[];
 
     const emails = new Set<string>();
     for (const r of rows) {

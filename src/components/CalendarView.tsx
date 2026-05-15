@@ -20,8 +20,17 @@ import {
 } from "@/lib/calendarBlocks";
 import ReservationModal from "@/components/ReservationModal";
 import ManualEventModal from "@/components/ManualEventModal";
+import CommonDetailModal, {
+  type CommonDetail,
+} from "@/components/CommonDetailModal";
+import { useCommonCalendar } from "@/lib/useCommonCalendar";
 import type { Item } from "@/types";
 import { CalendarIcon } from "@/components/icons";
+
+function emailToName(email: string): string {
+  const at = email.indexOf("@");
+  return at > 0 ? email.slice(0, at) : email;
+}
 
 const HOURS: number[] = Array.from(
   { length: EVENT_CLOSE_HOUR - EVENT_OPEN_HOUR + 1 },
@@ -109,11 +118,23 @@ export default function CalendarView() {
   const reservationsState = useReservations();
   const manualState = useManualEvents();
 
+  const [viewAll, setViewAll] = useState<boolean>(false);
+  const common = useCommonCalendar(viewAll);
+
   const [editingReservation, setEditingReservation] = useState<Item | null>(
     null,
   );
   const [editingManual, setEditingManual] = useState<ManualEvent | null>(null);
   const [creatingManual, setCreatingManual] = useState<boolean>(false);
+  const [detail, setDetail] = useState<CommonDetail | null>(null);
+
+  const reservations = viewAll
+    ? common.reservations
+    : reservationsState.reservations;
+  const events = viewAll ? common.events : manualState.events;
+  const participantNames = viewAll
+    ? common.participantNames
+    : { ...reservationsState.participantNames, ...manualState.participantNames };
 
   const manualItemsState = useManualItems();
   const itemsById = useMemo(() => {
@@ -125,7 +146,7 @@ export default function CalendarView() {
 
   const blocks: CalendarBlock[] = useMemo(() => {
     const editorStands = data?.editors.editors ?? {};
-    const reservationBlocks = reservationsState.reservations.map((r) =>
+    const reservationBlocks = reservations.map((r) =>
       reservationToBlock(
         r,
         itemsById.get(r.itemId) ?? null,
@@ -134,9 +155,9 @@ export default function CalendarView() {
           : [],
       ),
     );
-    const manualBlocks = manualState.events.map(manualToBlock);
+    const manualBlocks = events.map(manualToBlock);
     return [...reservationBlocks, ...manualBlocks];
-  }, [reservationsState.reservations, manualState.events, itemsById, data]);
+  }, [reservations, events, itemsById, data]);
 
   const blocksByDay = useMemo(() => positionByDay(blocks), [blocks]);
 
@@ -187,9 +208,39 @@ export default function CalendarView() {
           </Link>
           <div className="flex flex-1 flex-col leading-tight">
             <span className="text-base font-bold tracking-tight">
-              Le mie prenotazioni
+              {viewAll ? "Calendario comune" : "Le mie prenotazioni"}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setDetail(null);
+              setViewAll((v) => !v);
+            }}
+            aria-pressed={viewAll}
+            className={
+              "flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm " +
+              (viewAll
+                ? "bg-white text-brand-dark active:bg-white/90"
+                : "bg-white/20 text-white active:bg-white/30")
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>{viewAll ? "Comune" : "Tutti"}</span>
+          </button>
           <button
             type="button"
             onClick={() => setCreatingManual(true)}
@@ -202,10 +253,16 @@ export default function CalendarView() {
       </header>
 
       <main className="mx-auto max-w-3xl px-2 pb-24 pt-4">
-        {blocks.length === 0 && (
+        {blocks.length === 0 && !(viewAll && common.loading) && (
           <p className="px-3 py-6 text-center text-sm text-neutral-600">
-            Nessun evento ancora. Aggiungi una prenotazione dalla lista oppure
-            un evento manuale con il bottone in alto.
+            {viewAll
+              ? "Nessuna prenotazione del gruppo per ora."
+              : "Nessun evento ancora. Aggiungi una prenotazione dalla lista oppure un evento manuale con il bottone in alto."}
+          </p>
+        )}
+        {viewAll && common.loading && blocks.length === 0 && (
+          <p className="px-3 py-6 text-center text-sm text-neutral-500">
+            Carico il calendario comune…
           </p>
         )}
         <div className="flex gap-2">
@@ -269,6 +326,54 @@ export default function CalendarView() {
                         key={b.key}
                         type="button"
                         onClick={() => {
+                          if (viewAll && b.shared) {
+                            if (
+                              b.kind === "reservation" &&
+                              b.itemId !== null
+                            ) {
+                              const r = reservations.find(
+                                (x) =>
+                                  x.itemId === b.itemId &&
+                                  x.ownerEmail === b.ownerEmail,
+                              );
+                              if (r)
+                                setDetail({
+                                  kind: "reservation",
+                                  title: b.title,
+                                  reservedAt: r.reservedAt,
+                                  durationMinutes: r.durationMinutes,
+                                  editorName: b.editorName,
+                                  stand: b.stand,
+                                  note: r.note,
+                                  ownerEmail: r.ownerEmail,
+                                  sharedWith: r.sharedWith,
+                                  guests: r.guests,
+                                  maxSeats: r.maxSeats,
+                                });
+                            } else if (
+                              b.kind === "manual" &&
+                              b.manualId !== null
+                            ) {
+                              const me = events.find(
+                                (m) => m.id === b.manualId,
+                              );
+                              if (me)
+                                setDetail({
+                                  kind: "manual",
+                                  title: me.name,
+                                  reservedAt: me.reservedAt,
+                                  durationMinutes: me.durationMinutes,
+                                  editorName: null,
+                                  stand: me.stand,
+                                  note: me.note,
+                                  ownerEmail: me.ownerEmail,
+                                  sharedWith: me.sharedWith,
+                                  guests: me.guests,
+                                  maxSeats: me.maxSeats,
+                                });
+                            }
+                            return;
+                          }
                           if (b.kind === "reservation" && b.itemId) {
                             const item = itemsById.get(b.itemId);
                             if (item) setEditingReservation(item);
@@ -294,6 +399,13 @@ export default function CalendarView() {
                           {b.startTime}–{b.endTime}
                         </div>
                         <div className="truncate font-medium">{b.title}</div>
+                        {viewAll && b.shared && b.ownerEmail && (
+                          <div className="truncate text-[9px] font-semibold opacity-95">
+                            👤{" "}
+                            {participantNames[b.ownerEmail] ||
+                              emailToName(b.ownerEmail)}
+                          </div>
+                        )}
                         {(b.editorName || b.stand) && (
                           <div className="flex items-baseline gap-1 truncate text-[9px] opacity-90">
                             {b.editorName && (
@@ -335,21 +447,37 @@ export default function CalendarView() {
             return ed?.stands?.join("·") ?? null;
           })()}
           editorName={editingReservation.editor.name || null}
-          onClose={() => setEditingReservation(null)}
+          onClose={() => {
+            setEditingReservation(null);
+            if (viewAll) common.reload();
+          }}
         />
       )}
       {editingManual && (
         <ManualEventModal
           existing={editingManual}
           allBlocks={blocks}
-          onClose={() => setEditingManual(null)}
+          onClose={() => {
+            setEditingManual(null);
+            if (viewAll) common.reload();
+          }}
         />
       )}
       {creatingManual && (
         <ManualEventModal
           existing={null}
           allBlocks={blocks}
-          onClose={() => setCreatingManual(false)}
+          onClose={() => {
+            setCreatingManual(false);
+            if (viewAll) common.reload();
+          }}
+        />
+      )}
+      {detail && (
+        <CommonDetailModal
+          detail={detail}
+          participantNames={participantNames}
+          onClose={() => setDetail(null)}
         />
       )}
     </>
