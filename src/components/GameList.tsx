@@ -17,6 +17,7 @@ import GameRow from "@/components/GameRow";
 import AuthBar from "@/components/AuthBar";
 import ReservationModal from "@/components/ReservationModal";
 import PlayedModal from "@/components/PlayedModal";
+import ThemePicker from "@/components/ThemePicker";
 import {
   SearchIcon,
   CloseIcon,
@@ -36,7 +37,6 @@ type EditorGroup = {
 type Section = {
   category: { id: number; name: string; ordering: number };
   editorGroups: EditorGroup[];
-  total: number;
 };
 
 type Filter = "all" | "look" | "play" | "buy" | "reserved" | "played";
@@ -58,7 +58,6 @@ function buildSections(
           ordering: item.category.ordering,
         },
         editorGroups: [],
-        total: 0,
       };
       byCat.set(item.category.id, s);
     }
@@ -73,7 +72,6 @@ function buildSections(
       s.editorGroups.push(g);
     }
     g.items.push(item);
-    s.total += 1;
   }
   for (const s of byCat.values()) {
     for (const g of s.editorGroups) {
@@ -111,9 +109,7 @@ function filterSections(
     .map((s) => {
       const editorGroups = s.editorGroups
         .map((g) => {
-          const editorMatches = q
-            ? normalize(g.editorName).includes(q)
-            : true;
+          const editorMatches = q ? normalize(g.editorName).includes(q) : true;
           const items = g.items.filter((it) => {
             if (!passesFilter(it)) return false;
             if (!q) return true;
@@ -123,23 +119,22 @@ function filterSections(
           return items.length > 0 ? { ...g, items } : null;
         })
         .filter((g): g is EditorGroup => g !== null);
-      const total = editorGroups.reduce((n, g) => n + g.items.length, 0);
-      return total > 0 ? { ...s, editorGroups, total } : null;
+      return editorGroups.length > 0 ? { ...s, editorGroups } : null;
     })
     .filter((s): s is Section => s !== null);
 }
 
 function ColumnHeader() {
   return (
-    <div className="flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 py-1">
+    <div className="flex items-center gap-2 border-b border-neutral-100 px-3 py-1.5 text-neutral-400">
       <div className="flex h-6 w-7 items-center justify-center">
-        <LookIcon className="h-4 w-4 text-brand-dark" />
+        <LookIcon className="h-4 w-4" />
       </div>
       <div className="flex h-6 w-7 items-center justify-center">
-        <PlayIcon className="h-4 w-4 text-brand-dark" />
+        <PlayIcon className="h-4 w-4" />
       </div>
       <div className="flex h-6 w-7 items-center justify-center">
-        <BuyIcon className="h-4 w-4 text-brand-dark" />
+        <BuyIcon className="h-4 w-4" />
       </div>
     </div>
   );
@@ -160,10 +155,10 @@ function FilterChip({
       onClick={onClick}
       aria-pressed={active}
       className={
-        "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors " +
+        "flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors " +
         (active
-          ? "border-white bg-white text-brand-dark"
-          : "border-white/40 bg-transparent text-white active:bg-white/15")
+          ? "bg-white text-brand-dark shadow-sm"
+          : "bg-white/15 text-white active:bg-white/25")
       }
     >
       {children}
@@ -213,14 +208,21 @@ export default function GameList() {
     return m;
   }, [playsState.plays]);
 
+  const items = data?.items ?? [];
+  const editorsSnap: EditorsSnapshot = data?.editors ?? {
+    source: "",
+    generatedAt: "",
+    editors: {},
+  };
+
   const itemsById = useMemo(() => {
     const m = new Map<number, Item>();
-    for (const it of data?.items ?? []) m.set(it.id, it);
+    for (const it of items) m.set(it.id, it);
     return m;
-  }, [data]);
+  }, [items]);
 
   const allBlocks: CalendarBlock[] = useMemo(() => {
-    const editorStands = data?.editors.editors ?? {};
+    const editorStands = editorsSnap.editors ?? {};
     const r = reservationsState.reservations.map((res) => {
       const it = itemsById.get(res.itemId) ?? null;
       const stands = it ? (editorStands[it.editor.name]?.stands ?? []) : [];
@@ -228,14 +230,7 @@ export default function GameList() {
     });
     const m = manualState.events.map(manualToBlock);
     return [...r, ...m];
-  }, [reservationsState.reservations, manualState.events, itemsById, data]);
-
-  const items = data?.items ?? [];
-  const editorsSnap: EditorsSnapshot = data?.editors ?? {
-    source: "",
-    generatedAt: "",
-    editors: {},
-  };
+  }, [reservationsState.reservations, manualState.events, itemsById, editorsSnap]);
 
   const sections = useMemo(
     () => buildSections(items, editorsSnap),
@@ -254,15 +249,12 @@ export default function GameList() {
     [sections, query, filter, selections, reservationByItem, playByItem],
   );
 
-  const totalShown = filteredSections.reduce((n, s) => n + s.total, 0);
-  const selectedCount = hydrated ? Object.keys(selections).length : 0;
-
   function scrollToCategory(id: number) {
     setMenuOpen(false);
     const el = sectionRefs.current[id];
     if (el) {
       const header = document.getElementById("app-header");
-      const offset = (header?.offsetHeight ?? 0) + 4;
+      const offset = (header?.offsetHeight ?? 0) + 8;
       const top = el.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: "smooth" });
     }
@@ -276,14 +268,14 @@ export default function GameList() {
     <>
       <header
         id="app-header"
-        className="sticky top-0 z-30 bg-brand text-white shadow"
+        className="sticky top-0 z-30 bg-gradient-to-b from-brand to-brand-dark text-white shadow-lg"
       >
-        <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2">
+        <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 pt-2.5 pb-1.5">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Apri menu categorie"
-            className="rounded p-1.5 active:bg-white/15"
+            className="rounded-md p-1.5 active:bg-white/15"
           >
             {menuOpen ? (
               <CloseIcon className="h-5 w-5" />
@@ -292,47 +284,44 @@ export default function GameList() {
             )}
           </button>
           <div className="flex flex-1 flex-col leading-tight">
-            <span className="text-base font-bold">Listone Play 2026</span>
-            <span className="text-[11px] opacity-80">
-              {items.length > 0
-                ? `${totalShown} di ${items.length} titoli`
-                : loading
-                  ? "Carico…"
-                  : "Lista non disponibile"}
-              {selectedCount > 0 ? ` · ${selectedCount} selezionati` : ""}
-              {stale ? " · cache" : ""}
+            <span className="text-base font-bold tracking-tight">
+              Listone Play 2026
             </span>
+            {stale && (
+              <span className="text-[10px] opacity-70">offline · cache</span>
+            )}
           </div>
           {reservationsState.loggedIn && (
             <>
               <Link
                 href="/giocati"
                 aria-label="Giocati e votati"
-                className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
+                className="flex items-center justify-center rounded-md bg-white/15 p-1.5 active:bg-white/25"
               >
                 <StarIcon filled className="h-4 w-4" />
               </Link>
               <Link
                 href="/prenotazioni"
                 aria-label="Le mie prenotazioni"
-                className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
+                className="flex items-center justify-center rounded-md bg-white/15 p-1.5 active:bg-white/25"
               >
                 <CalendarIcon className="h-4 w-4" />
               </Link>
             </>
           )}
+          <ThemePicker />
           <a
             href={MAP_PDF_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Apri mappa Play 2026"
-            className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
+            className="flex items-center justify-center rounded-md bg-white/15 p-1.5 active:bg-white/25"
           >
             <MapPinIcon className="h-4 w-4" />
           </a>
         </div>
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 pb-2">
-          <div className="flex flex-1 items-center gap-2 rounded-md bg-white/95 px-2 py-1 text-neutral-700 shadow-inner">
+          <div className="flex flex-1 items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-neutral-700 shadow-inner">
             <SearchIcon className="h-4 w-4 text-neutral-500" />
             <input
               type="search"
@@ -358,31 +347,19 @@ export default function GameList() {
           </div>
         </div>
         <AuthBar />
-        <div className="mx-auto flex max-w-2xl items-center gap-1.5 overflow-x-auto px-3 pb-2">
-          <FilterChip
-            active={filter === "all"}
-            onClick={() => setFilter("all")}
-          >
+        <div className="mx-auto flex max-w-2xl items-center gap-1.5 overflow-x-auto px-3 pb-3">
+          <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
             Tutti
           </FilterChip>
-          <FilterChip
-            active={filter === "look"}
-            onClick={() => setFilter("look")}
-          >
+          <FilterChip active={filter === "look"} onClick={() => setFilter("look")}>
             <LookIcon className="h-3.5 w-3.5" />
             <span>Occhio</span>
           </FilterChip>
-          <FilterChip
-            active={filter === "play"}
-            onClick={() => setFilter("play")}
-          >
+          <FilterChip active={filter === "play"} onClick={() => setFilter("play")}>
             <PlayIcon className="h-3.5 w-3.5" />
             <span>Provare</span>
           </FilterChip>
-          <FilterChip
-            active={filter === "buy"}
-            onClick={() => setFilter("buy")}
-          >
+          <FilterChip active={filter === "buy"} onClick={() => setFilter("buy")}>
             <BuyIcon className="h-3.5 w-3.5" />
             <span>Comprare</span>
           </FilterChip>
@@ -414,10 +391,9 @@ export default function GameList() {
                   <button
                     type="button"
                     onClick={() => scrollToCategory(s.category.id)}
-                    className="w-full rounded px-2 py-1.5 text-left text-white active:bg-white/15"
+                    className="w-full rounded-md px-2 py-1.5 text-left text-white active:bg-white/15"
                   >
-                    {s.category.name}{" "}
-                    <span className="opacity-70">({s.total})</span>
+                    {s.category.name}
                   </button>
                 </li>
               ))}
@@ -426,7 +402,7 @@ export default function GameList() {
         )}
       </header>
 
-      <main className="mx-auto max-w-2xl px-3 pb-24 pt-3">
+      <main className="mx-auto max-w-2xl px-3 pb-24 pt-4">
         {loading && items.length === 0 && (
           <p className="px-3 py-12 text-center text-sm text-neutral-500">
             Carico la lista…
@@ -443,7 +419,7 @@ export default function GameList() {
             <button
               type="button"
               onClick={refresh}
-              className="mt-3 rounded bg-brand px-4 py-2 text-sm font-medium text-white shadow"
+              className="mt-3 rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white shadow"
             >
               Riprova
             </button>
@@ -468,35 +444,36 @@ export default function GameList() {
             ref={(el) => {
               sectionRefs.current[s.category.id] = el;
             }}
-            className="mb-6 scroll-mt-28"
+            className="mb-6 scroll-mt-44"
           >
-            <h2 className="-mx-3 mb-2 bg-brand-dark px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white">
-              {s.category.name}{" "}
-              <span className="font-normal opacity-80">({s.total})</span>
-            </h2>
+            <div className="my-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-neutral-300" />
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-dark">
+                {s.category.name}
+              </h2>
+              <div className="h-px flex-1 bg-neutral-300" />
+            </div>
 
-            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-              {s.editorGroups.map((g, idx) => (
-                <div key={g.editorName}>
-                  <div
-                    className={
-                      "flex items-baseline justify-between gap-2 bg-neutral-100 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-700" +
-                      (idx > 0 ? " border-t border-neutral-200" : "")
-                    }
-                  >
-                    <span className="flex-1">
-                      {g.editorName}{" "}
-                      <span className="font-normal text-neutral-500">
-                        ({g.items.length})
-                      </span>
-                    </span>
-                    {g.stands.length > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-brand-dark">
-                        <MapPinIcon className="h-3 w-3" />
-                        {g.stands.join(" · ")}
-                      </span>
-                    )}
-                  </div>
+            <div className="space-y-3">
+              {s.editorGroups.map((g) => (
+                <article
+                  key={g.editorName}
+                  className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100"
+                >
+                  <header className="flex items-stretch gap-3 bg-brand-tint pr-3">
+                    <div className="w-1 shrink-0 bg-brand" aria-hidden />
+                    <div className="flex flex-1 items-center gap-2 py-2.5">
+                      <h3 className="flex-1 text-[15px] font-bold tracking-tight text-neutral-900">
+                        {g.editorName}
+                      </h3>
+                      {g.stands.length > 0 && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white">
+                          <MapPinIcon className="h-3 w-3" />
+                          {g.stands.join("·")}
+                        </span>
+                      )}
+                    </div>
+                  </header>
                   <ColumnHeader />
                   <ul className="divide-y divide-neutral-100">
                     {g.items.map((it) => (
@@ -515,7 +492,7 @@ export default function GameList() {
                       />
                     ))}
                   </ul>
-                </div>
+                </article>
               ))}
             </div>
           </section>

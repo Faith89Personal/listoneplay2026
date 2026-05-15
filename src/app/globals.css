@@ -1,10 +1,56 @@
 @import "tailwindcss";
 
+:root {
+  --brand: #5ca040;
+  --brand-dark: #128104;
+}
+:root[data-theme="green"] {
+  --brand: #5ca040;
+  --brand-dark: #2f7d1a;
+}
+:root[data-theme="blue"] {
+  --brand: #3b82f6;
+  --brand-dark: #1d4ed8;
+}
+:root[data-theme="teal"] {
+  --brand: #14b8a6;
+  --brand-dark: #0f766e;
+}
+:root[data-theme="indigo"] {
+  --brand: #6366f1;
+  --brand-dark: #3730a3;
+}
+:root[data-theme="violet"] {
+  --brand: #8b5cf6;
+  --brand-dark: #6d28d9;
+}
+:root[data-theme="fuchsia"] {
+  --brand: #d946ef;
+  --brand-dark: #a21caf;
+}
+:root[data-theme="rose"] {
+  --brand: #f43f5e;
+  --brand-dark: #be123c;
+}
+:root[data-theme="orange"] {
+  --brand: #f97316;
+  --brand-dark: #c2410c;
+}
+:root[data-theme="amber"] {
+  --brand: #f59e0b;
+  --brand-dark: #b45309;
+}
+:root[data-theme="slate"] {
+  --brand: #64748b;
+  --brand-dark: #334155;
+}
+
 @theme {
-  --color-brand: #5ca040;
-  --color-brand-soft: #5ca0404d;
-  --color-brand-dark: #128104;
-  --color-accent: #f26522;
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-soft: color-mix(in srgb, var(--brand) 25%, transparent);
+  --color-brand-tint: color-mix(in srgb, var(--brand) 8%, white);
+  --color-accent: #f59e0b;
 }
 
 html,
@@ -13,8 +59,8 @@ body {
 }
 
 body {
-  background: #f9f9f9;
-  color: #111;
+  background: #f3f4f6;
+  color: #111827;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
 }

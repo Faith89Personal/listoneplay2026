@@ -73,12 +73,12 @@ export default function PlayedListView() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-brand text-white shadow">
-        <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2">
+      <header className="sticky top-0 z-30 bg-gradient-to-b from-brand to-brand-dark text-white shadow-lg">
+        <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2.5">
           <Link
             href="/"
             aria-label="Torna alla lista"
-            className="rounded p-1.5 active:bg-white/15"
+            className="rounded-md p-1.5 active:bg-white/15"
           >
             <svg
               viewBox="0 0 24 24"
@@ -94,15 +94,14 @@ export default function PlayedListView() {
             </svg>
           </Link>
           <div className="flex flex-1 flex-col leading-tight">
-            <span className="text-base font-bold">Giocati e votati</span>
-            <span className="text-[11px] opacity-80">
-              {rows.length} {rows.length === 1 ? "gioco" : "giochi"}
+            <span className="text-base font-bold tracking-tight">
+              Giocati e votati
             </span>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-3 pb-24 pt-3">
+      <main className="mx-auto max-w-2xl px-3 pb-24 pt-4">
         {rows.length === 0 && (
           <p className="px-3 py-10 text-center text-sm text-neutral-600">
             Nessun gioco giocato. Apri la lista e premi l&apos;icona stella
@@ -111,14 +110,14 @@ export default function PlayedListView() {
         )}
 
         {rows.length > 0 && (
-          <ul className="divide-y divide-neutral-100 overflow-hidden rounded-lg bg-white shadow-sm">
+          <ul className="divide-y divide-neutral-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100">
             {rows.map(({ play, item }) => (
               <li key={play.itemId}>
                 <button
                   type="button"
                   onClick={() => item && setEditingItem(item)}
                   disabled={!item}
-                  className="flex w-full flex-col gap-1 px-3 py-2 text-left text-sm active:bg-neutral-50 disabled:opacity-60"
+                  className="flex w-full flex-col gap-1.5 px-4 py-3 text-left text-sm active:bg-neutral-50 disabled:opacity-60"
                 >
                   <div className="flex items-center gap-2">
                     <Stars rating={play.rating} />
@@ -127,7 +126,7 @@ export default function PlayedListView() {
                     </span>
                   </div>
                   <div className="flex flex-col leading-tight">
-                    <span className="font-medium">
+                    <span className="font-semibold text-neutral-900">
                       {item?.name ?? `#${play.itemId}`}
                     </span>
                     <span className="text-xs text-neutral-500">

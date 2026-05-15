@@ -133,16 +133,14 @@ export default function CalendarView() {
     );
   }
 
-  const total = blocks.length;
-
   return (
     <>
-      <header className="sticky top-0 z-30 bg-brand text-white shadow">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-2">
+      <header className="sticky top-0 z-30 bg-gradient-to-b from-brand to-brand-dark text-white shadow-lg">
+        <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-2.5">
           <Link
             href="/"
             aria-label="Torna alla lista"
-            className="rounded p-1.5 active:bg-white/15"
+            className="rounded-md p-1.5 active:bg-white/15"
           >
             <svg
               viewBox="0 0 24 24"
@@ -158,15 +156,14 @@ export default function CalendarView() {
             </svg>
           </Link>
           <div className="flex flex-1 flex-col leading-tight">
-            <span className="text-base font-bold">Le mie prenotazioni</span>
-            <span className="text-[11px] opacity-80">
-              {total} {total === 1 ? "evento" : "eventi"}
+            <span className="text-base font-bold tracking-tight">
+              Le mie prenotazioni
             </span>
           </div>
           <button
             type="button"
             onClick={() => setCreatingManual(true)}
-            className="flex items-center gap-1 rounded bg-white px-2 py-1 text-xs font-semibold text-brand-dark active:bg-white/90"
+            className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-brand-dark shadow-sm active:bg-white/90"
           >
             <CalendarIcon className="h-4 w-4" />
             <span>Aggiungi</span>
@@ -174,8 +171,8 @@ export default function CalendarView() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-2 pb-24 pt-3">
-        {total === 0 && (
+      <main className="mx-auto max-w-3xl px-2 pb-24 pt-4">
+        {blocks.length === 0 && (
           <p className="px-3 py-6 text-center text-sm text-neutral-600">
             Nessun evento ancora. Aggiungi una prenotazione dalla lista oppure
             un evento manuale con il bottone in alto.
@@ -197,11 +194,11 @@ export default function CalendarView() {
             const list = blocksByDay.get(d.date) ?? [];
             return (
               <div key={d.date} className="flex-1">
-                <div className="sticky top-12 z-10 bg-brand-soft py-1 text-center text-xs font-semibold text-brand-dark">
+                <div className="sticky top-12 z-10 rounded-t-md bg-brand-tint py-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-brand-dark">
                   {d.short} {d.date.slice(8)}
                 </div>
                 <div
-                  className="relative border-l border-neutral-200 bg-neutral-50"
+                  className="relative rounded-b-md border-l border-neutral-200 bg-white"
                   style={{
                     height:
                       (EVENT_CLOSE_HOUR - EVENT_OPEN_HOUR) * 60 * PX_PER_MIN,
