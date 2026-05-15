@@ -23,6 +23,7 @@ import PlayedModal from "@/components/PlayedModal";
 import ManualItemModal from "@/components/ManualItemModal";
 import RushModal from "@/components/RushModal";
 import ThemePicker from "@/components/ThemePicker";
+import InstallHint from "@/components/InstallHint";
 import {
   SearchIcon,
   CloseIcon,
@@ -471,6 +472,7 @@ export default function GameList() {
       </header>
 
       <main className="mx-auto max-w-2xl px-3 pb-24 pt-4">
+        <InstallHint />
         {morningRushBanner && (
           <Link
             href="/rush"

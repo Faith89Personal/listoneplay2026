@@ -4,12 +4,22 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Listone Play 2026",
   description: "Lista dei giochi da provare in fiera",
+  appleWebApp: {
+    capable: true,
+    title: "Listone",
+    statusBarStyle: "default",
+  },
+  applicationName: "Listone Play 2026",
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#5ca040",
+  maximumScale: 5,
+  themeColor: "#15803d",
 };
 
 const themeInitScript = `
