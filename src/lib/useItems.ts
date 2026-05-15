@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Item, Vote } from "@/types";
+import type { EditorsSnapshot, Item, Vote } from "@/types";
 
-const CACHE_KEY = "listoneplay2026:dataset:v1";
+const CACHE_KEY = "listoneplay2026:dataset:v2";
 const TTL_MS = 10 * 60 * 1000;
 
-type Dataset = { items: Item[]; voteCounts: Record<number, number> };
+type Dataset = {
+  items: Item[];
+  voteCounts: Record<number, number>;
+  editors: EditorsSnapshot;
+};
 type CachedEnvelope = { savedAt: number; data: Dataset };
 
 export type FetchState = {
@@ -56,15 +60,25 @@ function tallyVotes(votes: Vote[]): Record<number, number> {
   return counts;
 }
 
+const EMPTY_EDITORS: EditorsSnapshot = {
+  source: "",
+  generatedAt: "",
+  editors: {},
+};
+
 async function fetchDataset(): Promise<Dataset> {
-  const [itemsRes, votesRes] = await Promise.all([
+  const [itemsRes, votesRes, editorsRes] = await Promise.all([
     fetch("/api/items", { cache: "no-store" }),
     fetch("/api/votes", { cache: "no-store" }),
+    fetch("/api/editors", { cache: "no-store" }),
   ]);
   if (!itemsRes.ok) throw new Error(`items_${itemsRes.status}`);
   const items = (await itemsRes.json()) as Item[];
   const votes = votesRes.ok ? ((await votesRes.json()) as Vote[]) : [];
-  return { items, voteCounts: tallyVotes(votes) };
+  const editors = editorsRes.ok
+    ? ((await editorsRes.json()) as EditorsSnapshot)
+    : EMPTY_EDITORS;
+  return { items, voteCounts: tallyVotes(votes), editors };
 }
 
 export function useItems(): FetchState {

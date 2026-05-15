@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import type { Item } from "@/types";
-import { useSelections } from "@/lib/storage";
+import type { EditorsSnapshot, Item } from "@/types";
+import { useSelections, type Selections } from "@/lib/storage";
 import { useItems } from "@/lib/useItems";
 import GameRow from "@/components/GameRow";
 import {
@@ -14,14 +14,26 @@ import {
   BuyIcon,
 } from "@/components/icons";
 
-type EditorGroup = { editorName: string; items: Item[] };
+type EditorGroup = {
+  editorName: string;
+  stands: string[];
+  items: Item[];
+};
 type Section = {
   category: { id: number; name: string; ordering: number };
   editorGroups: EditorGroup[];
   total: number;
 };
 
-function buildSections(items: Item[]): Section[] {
+type Filter = "all" | "look" | "play" | "buy";
+
+const MAP_PDF_URL =
+  "https://www.play-festival.it/assets/Uploads/Mappa-Play-2026.pdf";
+
+function buildSections(
+  items: Item[],
+  editorsSnap: EditorsSnapshot,
+): Section[] {
   const byCat = new Map<number, Section>();
   for (const item of items) {
     let s = byCat.get(item.category.id);
@@ -39,7 +51,12 @@ function buildSections(items: Item[]): Section[] {
     }
     let g = s.editorGroups.find((eg) => eg.editorName === item.editor.name);
     if (!g) {
-      g = { editorName: item.editor.name, items: [] };
+      const info = editorsSnap.editors[item.editor.name];
+      g = {
+        editorName: item.editor.name,
+        stands: info?.stands ?? [],
+        items: [],
+      };
       s.editorGroups.push(g);
     }
     g.items.push(item);
@@ -62,16 +79,30 @@ function normalize(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-function filterSections(sections: Section[], query: string): Section[] {
+function filterSections(
+  sections: Section[],
+  query: string,
+  filter: Filter,
+  selections: Selections,
+): Section[] {
   const q = normalize(query.trim());
-  if (!q) return sections;
+  const passesFilter = (it: Item) => {
+    if (filter === "all") return true;
+    return selections[it.id]?.[filter] === "checked";
+  };
   return sections
     .map((s) => {
       const editorGroups = s.editorGroups
         .map((g) => {
-          const editorMatches = normalize(g.editorName).includes(q);
-          if (editorMatches) return g;
-          const items = g.items.filter((it) => normalize(it.name).includes(q));
+          const editorMatches = q
+            ? normalize(g.editorName).includes(q)
+            : true;
+          const items = g.items.filter((it) => {
+            if (!passesFilter(it)) return false;
+            if (!q) return true;
+            if (editorMatches) return true;
+            return normalize(it.name).includes(q);
+          });
           return items.length > 0 ? { ...g, items } : null;
         })
         .filter((g): g is EditorGroup => g !== null);
@@ -81,19 +112,87 @@ function filterSections(sections: Section[], query: string): Section[] {
     .filter((s): s is Section => s !== null);
 }
 
+function ColumnHeader() {
+  return (
+    <div className="flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 py-1">
+      <div className="flex h-6 w-7 items-center justify-center">
+        <LookIcon className="h-4 w-4 text-brand-dark" />
+      </div>
+      <div className="flex h-6 w-7 items-center justify-center">
+        <PlayIcon className="h-4 w-4 text-brand-dark" />
+      </div>
+      <div className="flex h-6 w-7 items-center justify-center">
+        <BuyIcon className="h-4 w-4 text-brand-dark" />
+      </div>
+    </div>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={
+        "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors " +
+        (active
+          ? "border-white bg-white text-brand-dark"
+          : "border-white/40 bg-transparent text-white active:bg-white/15")
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
+function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </svg>
+  );
+}
+
 export default function GameList() {
   const { data, loading, error, stale, refresh } = useItems();
   const { selections, cycle, hydrated } = useSelections();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
 
   const items = data?.items ?? [];
+  const editorsSnap: EditorsSnapshot = data?.editors ?? {
+    source: "",
+    generatedAt: "",
+    editors: {},
+  };
 
-  const sections = useMemo(() => buildSections(items), [items]);
+  const sections = useMemo(
+    () => buildSections(items, editorsSnap),
+    [items, editorsSnap],
+  );
   const filteredSections = useMemo(
-    () => filterSections(sections, query),
-    [sections, query],
+    () => filterSections(sections, query, filter, selections),
+    [sections, query, filter, selections],
   );
 
   const totalShown = filteredSections.reduce((n, s) => n + s.total, 0);
@@ -111,6 +210,8 @@ export default function GameList() {
   }
 
   const showEmptyState = !loading && items.length === 0;
+  const noResults =
+    !showEmptyState && filteredSections.length === 0 && items.length > 0;
 
   return (
     <>
@@ -143,6 +244,16 @@ export default function GameList() {
               {stale ? " · cache" : ""}
             </span>
           </div>
+          <a
+            href={MAP_PDF_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Apri mappa Play 2026"
+            className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
+          >
+            <MapPinIcon className="h-4 w-4" />
+            <span className="hidden xs:inline">Mappa</span>
+          </a>
         </div>
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 pb-2">
           <div className="flex flex-1 items-center gap-2 rounded-md bg-white/95 px-2 py-1 text-neutral-700 shadow-inner">
@@ -169,6 +280,35 @@ export default function GameList() {
               </button>
             )}
           </div>
+        </div>
+        <div className="mx-auto flex max-w-2xl items-center gap-1.5 overflow-x-auto px-3 pb-2">
+          <FilterChip
+            active={filter === "all"}
+            onClick={() => setFilter("all")}
+          >
+            Tutti
+          </FilterChip>
+          <FilterChip
+            active={filter === "look"}
+            onClick={() => setFilter("look")}
+          >
+            <LookIcon className="h-3.5 w-3.5" />
+            <span>Occhio</span>
+          </FilterChip>
+          <FilterChip
+            active={filter === "play"}
+            onClick={() => setFilter("play")}
+          >
+            <PlayIcon className="h-3.5 w-3.5" />
+            <span>Provare</span>
+          </FilterChip>
+          <FilterChip
+            active={filter === "buy"}
+            onClick={() => setFilter("buy")}
+          >
+            <BuyIcon className="h-3.5 w-3.5" />
+            <span>Comprare</span>
+          </FilterChip>
         </div>
 
         {menuOpen && (
@@ -215,13 +355,13 @@ export default function GameList() {
           </div>
         )}
 
-        {!showEmptyState &&
-          filteredSections.length === 0 &&
-          items.length > 0 && (
-            <p className="px-3 py-12 text-center text-sm text-neutral-500">
-              Nessun titolo trovato.
-            </p>
-          )}
+        {noResults && (
+          <p className="px-3 py-12 text-center text-sm text-neutral-500">
+            {filter !== "all"
+              ? "Nessun titolo selezionato per questo filtro."
+              : "Nessun titolo trovato."}
+          </p>
+        )}
 
         {filteredSections.map((s) => (
           <section
@@ -236,32 +376,29 @@ export default function GameList() {
               <span className="font-normal opacity-80">({s.total})</span>
             </h2>
 
-            <div className="flex items-center gap-2 px-3 pb-1 pt-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
-              <div className="flex h-7 w-7 items-center justify-center">
-                <LookIcon className="h-4 w-4 text-brand-dark" />
-              </div>
-              <div className="flex h-7 w-7 items-center justify-center">
-                <PlayIcon className="h-4 w-4 text-brand-dark" />
-              </div>
-              <div className="flex h-7 w-7 items-center justify-center">
-                <BuyIcon className="h-4 w-4 text-brand-dark" />
-              </div>
-            </div>
-
             <div className="overflow-hidden rounded-lg bg-white shadow-sm">
               {s.editorGroups.map((g, idx) => (
                 <div key={g.editorName}>
                   <div
                     className={
-                      "bg-neutral-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-700" +
+                      "flex items-baseline justify-between gap-2 bg-neutral-100 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-700" +
                       (idx > 0 ? " border-t border-neutral-200" : "")
                     }
                   >
-                    {g.editorName}{" "}
-                    <span className="font-normal text-neutral-500">
-                      ({g.items.length})
+                    <span className="flex-1">
+                      {g.editorName}{" "}
+                      <span className="font-normal text-neutral-500">
+                        ({g.items.length})
+                      </span>
                     </span>
+                    {g.stands.length > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-brand-dark">
+                        <MapPinIcon className="h-3 w-3" />
+                        {g.stands.join(" · ")}
+                      </span>
+                    )}
                   </div>
+                  <ColumnHeader />
                   <ul className="divide-y divide-neutral-100">
                     {g.items.map((it) => (
                       <GameRow

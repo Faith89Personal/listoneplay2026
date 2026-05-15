@@ -1,0 +1,511 @@
+{
+  "source": "https://www.play-festival.it/assets/Uploads/Mappa-Play-2026.pdf",
+  "generatedAt": "2026-05-15T11:17:33.359Z",
+  "editors": {
+    "Aleph Game Studio": {
+      "stands": [
+        "D12"
+      ],
+      "pdfName": "ALEPH GAMES"
+    },
+    "Alex Games": {
+      "stands": [
+        "B83"
+      ],
+      "pdfName": "ALEX GAMES"
+    },
+    "Asmodee": {
+      "stands": [
+        "Q22",
+        "R21",
+        "B68",
+        "C69"
+      ],
+      "pdfName": "ASMODEE ITALIA"
+    },
+    "Beyond Words Games": {
+      "stands": [
+        "A25"
+      ],
+      "pdfName": "BEYOND WORDS GAMES"
+    },
+    "Cheeky Chess": {
+      "stands": [
+        "S40"
+      ],
+      "pdfName": "CHEEKYCHESS"
+    },
+    "Clementoni": {
+      "stands": [
+        "C78"
+      ],
+      "pdfName": "CLEMENTONI"
+    },
+    "Cosmic Group": {
+      "stands": [
+        "N42",
+        "O41"
+      ],
+      "pdfName": "COSMIC GROUP"
+    },
+    "Cranio Creations": {
+      "stands": [
+        "A68",
+        "B69"
+      ],
+      "pdfName": "CRANIO CREATIONS"
+    },
+    "Creardo": {
+      "stands": [
+        "C76"
+      ],
+      "pdfName": "CREARDO"
+    },
+    "CreativaMente": {
+      "stands": [
+        "A73"
+      ],
+      "pdfName": "CREATIVAMENTE"
+    },
+    "Deer Games Studio": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "DEER GAMES STUDIO"
+    },
+    "Devir": {
+      "stands": [
+        "A52",
+        "B53"
+      ],
+      "pdfName": "DEVIR ITALIA"
+    },
+    "Djeco": {
+      "stands": [
+        "P24",
+        "Q23"
+      ],
+      "pdfName": "DJECO"
+    },
+    "Dawn Town Games": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "DAWN TOWN GAMES"
+    },
+    "DV Games": {
+      "stands": [
+        "B22",
+        "C23"
+      ],
+      "pdfName": "DV GAMES E GHENOS GAMES"
+    },
+    "Epeira": {
+      "stands": [
+        "B83"
+      ],
+      "pdfName": "EPEIRA"
+    },
+    "Ergo Ludo Editions (MS Edizioni)": {
+      "stands": [
+        "A58",
+        "B59",
+        "A59",
+        "A65"
+      ],
+      "pdfName": "MS EDIZIONI"
+    },
+    "Erickson": {
+      "stands": [
+        "G1"
+      ],
+      "pdfName": "ERICKSON"
+    },
+    "Ghenos Games": {
+      "stands": [
+        "B22",
+        "C23"
+      ],
+      "pdfName": "DV GAMES E GHENOS GAMES"
+    },
+    "Giochix": {
+      "stands": [
+        "A47"
+      ],
+      "pdfName": "GIOCHIX"
+    },
+    "Giochi Uniti": {
+      "stands": [
+        "L13",
+        "B1"
+      ],
+      "pdfName": "GIOCHI UNITI"
+    },
+    "Hollow Press": {
+      "stands": [
+        "L39"
+      ],
+      "pdfName": "HOLLOW PRESS"
+    },
+    "Ingenioso Hidalgo": {
+      "stands": [
+        "D12"
+      ],
+      "pdfName": "INGENIOSO HIDALGO"
+    },
+    "Isochronia Games": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "DRAGON IN THE HUT (ISOCHRONIA GAMES)"
+    },
+    "Little Rocket Games": {
+      "stands": [
+        "C15"
+      ],
+      "pdfName": "LITTLE ROCKET GAMES"
+    },
+    "LooMoon": {
+      "stands": [
+        "C58"
+      ],
+      "pdfName": "LOOMOON"
+    },
+    "Ludus Magnus": {
+      "stands": [
+        "A44",
+        "B45"
+      ],
+      "pdfName": "LUDUS MAGNUS"
+    },
+    "Magari": {
+      "stands": [
+        "A37"
+      ],
+      "pdfName": "MAGARI"
+    },
+    "Mana Project": {
+      "stands": [
+        "M24",
+        "A27"
+      ],
+      "pdfName": "MANA PROJECT STUDIO"
+    },
+    "ManCalamaro": {
+      "stands": [
+        "B52",
+        "C53"
+      ],
+      "pdfName": "MANCALAMARO"
+    },
+    "MathOnGames": {
+      "stands": [
+        "C30"
+      ],
+      "pdfName": "MATH ON GAMES"
+    },
+    "MDV - Norby": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "MDV NORBY - CAT SUSHI MASTERS"
+    },
+    "MS Edizioni": {
+      "stands": [
+        "A58",
+        "B59",
+        "A59",
+        "A65"
+      ],
+      "pdfName": "MS EDIZIONI"
+    },
+    "Need Games": {
+      "stands": [
+        "M8",
+        "N7"
+      ],
+      "pdfName": "NEED GAMES"
+    },
+    "Nigredo Press": {
+      "stands": [
+        "M2"
+      ],
+      "pdfName": "NIGREDO PRESS"
+    },
+    "Officina Meningi": {
+      "stands": [
+        "L43"
+      ],
+      "pdfName": "OFFICINA MENINGI GDR E LIBROGAME"
+    },
+    "Oliphante": {
+      "stands": [
+        "C20"
+      ],
+      "pdfName": "OLIPHANTE"
+    },
+    "Pendragon Game Studio": {
+      "stands": [
+        "A22",
+        "B23"
+      ],
+      "pdfName": "PENDRAGON GAME STUDIO"
+    },
+    "Pick 'N' Roll Games Lab": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "PICK ‘N’ ROLL GAMES LAB"
+    },
+    "Presso Edizioni": {
+      "stands": [
+        "N2"
+      ],
+      "pdfName": "PRESSO EDIZIONI"
+    },
+    "Red Glove": {
+      "stands": [
+        "A81"
+      ],
+      "pdfName": "RED GLOVE"
+    },
+    "Space Otter Publishing": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "SPACE OTTER PUBLISHING"
+    },
+    "Studio Supernova": {
+      "stands": [
+        "C39"
+      ],
+      "pdfName": "STUDIO SUPERNOVA"
+    },
+    "Tambù": {
+      "stands": [
+        "C42"
+      ],
+      "pdfName": "TAMBÙ"
+    },
+    "Tesla Games": {
+      "stands": [
+        "A14"
+      ],
+      "pdfName": "TESLA GAMES"
+    },
+    "Weega": {
+      "stands": [
+        "C54"
+      ],
+      "pdfName": "WEEGA"
+    },
+    "Xplored (Teburu)": {
+      "stands": [
+        "C48"
+      ],
+      "pdfName": "TEBURU"
+    },
+    "Yas! Games": {
+      "stands": [
+        "N42",
+        "O41",
+        "B40"
+      ],
+      "pdfName": "YAS! GAMES"
+    },
+    "Ravensburger": {
+      "stands": [
+        "B38"
+      ],
+      "pdfName": "RAVENSBURGER"
+    },
+    "Briantine Games": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "BRIANTINE GAMES ARKENDOM"
+    },
+    "42 Games Project": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "ASSOCIAZIONE 42 GAMES APS"
+    },
+    "Industrie Creative": {
+      "stands": [
+        "A40",
+        "B39"
+      ],
+      "pdfName": "INDUSTRIE CREATIVE"
+    },
+    "Aces Games": {
+      "stands": [
+        "J1"
+      ],
+      "pdfName": "ACES GAMES"
+    },
+    "Acheron": {
+      "stands": [
+        "L30",
+        "M29"
+      ],
+      "pdfName": "ACHERON"
+    },
+    "Ali Ribelli": {
+      "stands": [
+        "S21"
+      ],
+      "pdfName": "ALI PER GIOCARE"
+    },
+    "Compose Dream Games": {
+      "stands": [
+        "L2"
+      ],
+      "pdfName": "COMPOSE DREAM GAMES"
+    },
+    "Forge of Role": {
+      "stands": [
+        "L8"
+      ],
+      "pdfName": "FORGE OF ROLE"
+    },
+    "Gamers Hunter": {
+      "stands": [
+        "M7"
+      ],
+      "pdfName": "GAMERS HUNTER & WOLFY & JORDY"
+    },
+    "Grumpy Bear": {
+      "stands": [
+        "N23"
+      ],
+      "pdfName": "GRUMPY BEAR"
+    },
+    "Isola Illyon Edizioni": {
+      "stands": [
+        "N8"
+      ],
+      "pdfName": "ISOLA ILLYON EDIZIONI"
+    },
+    "Mist Games": {
+      "stands": [
+        "L19"
+      ],
+      "pdfName": "MIST GAMES"
+    },
+    "NessunDove": {
+      "stands": [
+        "M22"
+      ],
+      "pdfName": "NESSUNDOVE"
+    },
+    "Red Kingdom": {
+      "stands": [
+        "A81"
+      ],
+      "pdfName": "RED GLOVE"
+    },
+    "Sayonara Buttercat": {
+      "stands": [
+        "L8"
+      ],
+      "pdfName": "SAYONARA BUTTERCAT"
+    },
+    "Stratagemma": {
+      "stands": [
+        "L7"
+      ],
+      "pdfName": "STRATAGEMMA"
+    },
+    "Vea Editori": {
+      "stands": [
+        "O56"
+      ],
+      "pdfName": "VEA EDITORI"
+    },
+    "Wyrd (Terra dei Giochi)": {
+      "stands": [
+        "L27"
+      ],
+      "pdfName": "TERRA DEI GIOCHI"
+    },
+    "Narrattiva": {
+      "stands": [
+        "L45"
+      ],
+      "pdfName": "NARRATTIVA"
+    },
+    "Aristea": {
+      "stands": [
+        "L21"
+      ],
+      "pdfName": "ARISTEA"
+    },
+    "Dracomaca": {
+      "stands": [
+        "A53"
+      ],
+      "pdfName": "DRACOMACA"
+    },
+    "Miranthall Chronicles": {
+      "stands": [
+        "N2"
+      ],
+      "pdfName": "MIRANTHALL CHRONICLES"
+    },
+    "Raven": {
+      "stands": [
+        "M36",
+        "N35"
+      ],
+      "pdfName": "RAVEN DISTRIBUTION DRAGONSTORE"
+    },
+    "Tora Edizioni": {
+      "stands": [
+        "L50"
+      ],
+      "pdfName": "TORA EDIZIONI"
+    },
+    "Plesio": {
+      "stands": [
+        "N2"
+      ],
+      "pdfName": "PLESIO EDITORE"
+    },
+    "Centum Oculi": {
+      "stands": [
+        "N6"
+      ],
+      "pdfName": "CENTUM OCULI"
+    },
+    "Two Little Mice": {
+      "stands": [
+        "N36",
+        "O35"
+      ],
+      "pdfName": "TWO LITTLE MICE"
+    },
+    "Avalon Sword": {
+      "stands": [
+        "L36",
+        "M35"
+      ],
+      "pdfName": "AVALON SWORD"
+    },
+    "Raven Distribution / Vincent Books": {
+      "stands": [
+        "M36",
+        "N35"
+      ],
+      "pdfName": "RAVEN DISTRIBUTION DRAGONSTORE"
+    }
+  }
+}

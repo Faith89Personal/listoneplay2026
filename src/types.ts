@@ -26,3 +26,14 @@ export type Item = {
 export type Vote = {
   id: { idItem: number; date: string };
 };
+
+export type EditorStandInfo = {
+  stands: string[];
+  pdfName: string;
+};
+
+export type EditorsSnapshot = {
+  source: string;
+  generatedAt: string;
+  editors: Record<string, EditorStandInfo>;
+};
