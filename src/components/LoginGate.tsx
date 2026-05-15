@@ -57,7 +57,7 @@ export default function LoginGate({
         >
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-neutral-600">
-              Nome (opzionale)
+              Nome
             </span>
             <input
               type="text"
@@ -66,6 +66,7 @@ export default function LoginGate({
               maxLength={80}
               placeholder="es. Marco"
               className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+              required
             />
           </label>
           <label className="block">
@@ -101,7 +102,9 @@ export default function LoginGate({
           )}
           <button
             type="submit"
-            disabled={busy || email.trim().length === 0}
+            disabled={
+              busy || email.trim().length === 0 || name.trim().length === 0
+            }
             className="w-full rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow active:bg-brand-dark disabled:opacity-60"
           >
             {busy ? "…" : "Entra"}

@@ -51,7 +51,7 @@ export default function ManualEventModal({
   allBlocks,
   onClose,
 }: Props) {
-  const { save, remove } = useManualEvents();
+  const { save, remove, participantNames } = useManualEvents();
   const initial = existing ? utcIsoToRomeParts(existing.reservedAt) : null;
 
   const [name, setName] = useState<string>(existing?.name ?? "");
@@ -69,6 +69,9 @@ export default function ManualEventModal({
   );
   const [guests, setGuests] = useState<string[]>(existing?.guests ?? []);
   const [guestInput, setGuestInput] = useState<string>("");
+  const [sharedWith, setSharedWith] = useState<string[]>(
+    existing?.sharedWith ?? [],
+  );
   const [busy, setBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +110,7 @@ export default function ManualEventModal({
         note: note.trim() || null,
         maxSeats: maxSeats,
         guests,
+        sharedWith,
       });
       setSavedToken(result.shareToken ?? existing?.shareToken ?? null);
     } catch (err) {
@@ -258,7 +262,10 @@ export default function ManualEventModal({
   }
 
   if (isShared) {
-    const ownerName = existing?.ownerEmail ? emailToName(existing.ownerEmail) : "qualcuno";
+    const ownerEmail = existing?.ownerEmail;
+    const ownerName = ownerEmail
+      ? participantNames[ownerEmail] || emailToName(ownerEmail)
+      : "qualcuno";
     return (
       <div
         className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
@@ -309,7 +316,7 @@ export default function ManualEventModal({
                 {[
                   ...existing.sharedWith
                     .filter((e) => e !== existing.ownerEmail)
-                    .map(emailToName),
+                    .map((e) => participantNames[e] || emailToName(e)),
                   ...existing.guests.map((g) => `${g} (guest)`),
                 ].join(", ")}
               </p>
@@ -602,14 +609,53 @@ export default function ManualEventModal({
 
             {existing &&
               existing.isOwner &&
-              (existing.sharedWith.length > 0 || existing.guests.length > 0) && (
-                <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
-                  <span className="font-semibold">Partecipanti:</span>{" "}
-                  {[
-                    ...existing.sharedWith.map(emailToName),
-                    ...existing.guests.map((g) => `${g} (guest)`),
-                  ].join(", ")}
-                </p>
+              (sharedWith.length > 0 || guests.length > 0) && (
+                <div className="rounded-md bg-emerald-50 px-3 py-2 ring-1 ring-emerald-200">
+                  <span className="text-xs font-semibold text-emerald-900">
+                    Partecipanti
+                  </span>
+                  <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                    {sharedWith.map((email) => (
+                      <li
+                        key={`s:${email}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs text-neutral-800 ring-1 ring-emerald-200"
+                      >
+                        {participantNames[email] || emailToName(email)}
+                        <button
+                          type="button"
+                          aria-label={`Rimuovi ${email}`}
+                          onClick={() =>
+                            setSharedWith(sharedWith.filter((x) => x !== email))
+                          }
+                          className="text-neutral-500"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                    {guests.map((g) => (
+                      <li
+                        key={`g:${g}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700"
+                      >
+                        {g}
+                        <span className="text-[10px] uppercase tracking-wide text-neutral-500">
+                          guest
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Rimuovi guest ${g}`}
+                          onClick={() =>
+                            setGuests(guests.filter((x) => x !== g))
+                          }
+                          className="text-neutral-500"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
             {error && (

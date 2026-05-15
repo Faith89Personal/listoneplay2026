@@ -18,6 +18,7 @@ export type Reservation = {
 
 export type ReservationsState = {
   reservations: Reservation[];
+  participantNames: Record<string, string>;
   loading: boolean;
   error: string | null;
 };
@@ -26,6 +27,7 @@ type Listener = (s: ReservationsState) => void;
 
 let cache: ReservationsState = {
   reservations: [],
+  participantNames: {},
   loading: true,
   error: null,
 };
@@ -42,15 +44,34 @@ async function load(): Promise<ReservationsState> {
     const res = await fetch("/api/reservations", { cache: "no-store" });
     if (!res.ok) {
       if (res.status === 401) {
-        return { reservations: [], loading: false, error: null };
+        return {
+          reservations: [],
+          participantNames: {},
+          loading: false,
+          error: null,
+        };
       }
-      return { reservations: [], loading: false, error: `http_${res.status}` };
+      return {
+        reservations: [],
+        participantNames: {},
+        loading: false,
+        error: `http_${res.status}`,
+      };
     }
-    const data = (await res.json()) as { reservations: Reservation[] };
-    return { reservations: data.reservations, loading: false, error: null };
+    const data = (await res.json()) as {
+      reservations: Reservation[];
+      participantNames?: Record<string, string>;
+    };
+    return {
+      reservations: data.reservations,
+      participantNames: data.participantNames ?? {},
+      loading: false,
+      error: null,
+    };
   } catch (err) {
     return {
       reservations: [],
+      participantNames: {},
       loading: false,
       error: (err as Error).message,
     };
@@ -92,7 +113,12 @@ export function useReservations() {
     if (session.loading) return;
     if (!session.email) {
       cachedForEmail = null;
-      setShared({ reservations: [], loading: false, error: null });
+      setShared({
+        reservations: [],
+        participantNames: {},
+        loading: false,
+        error: null,
+      });
       return;
     }
     if (cachedForEmail === session.email && !cache.loading) return;
@@ -109,6 +135,7 @@ export function useReservations() {
       note: string | null;
       maxSeats: number | null;
       guests?: string[];
+      sharedWith?: string[];
     }): Promise<{ shareToken: string | null }> => {
       const res = await fetch("/api/reservations", {
         method: "POST",

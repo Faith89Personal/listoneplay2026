@@ -78,6 +78,16 @@ export async function GET(
       typeof r.max_seats === "number" && occupied >= r.max_seats;
     const info = lookupItem(r.item_id);
     const exposeEmails = isOwner || isJoined;
+    const participantNames: Record<string, string> = {};
+    if (exposeEmails) {
+      const lookupEmails = [r.email, ...sharedWith];
+      const nameRows = (await sql`
+        SELECT email, name FROM users WHERE email = ANY(${lookupEmails})
+      `) as { email: string; name: string | null }[];
+      for (const u of nameRows) {
+        if (u.name && u.name.trim().length > 0) participantNames[u.email] = u.name;
+      }
+    }
     return NextResponse.json({
       reservation: {
         itemId: r.item_id,
@@ -93,6 +103,7 @@ export async function GET(
         ownerEmail: exposeEmails ? r.email : null,
         sharedWith: exposeEmails ? sharedWith : [],
         guests,
+        participantNames,
       },
       viewer: {
         loggedIn: !!session?.email,

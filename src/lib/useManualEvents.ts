@@ -20,6 +20,7 @@ export type ManualEvent = {
 
 export type ManualEventsState = {
   events: ManualEvent[];
+  participantNames: Record<string, string>;
   loading: boolean;
   error: string | null;
 };
@@ -28,6 +29,7 @@ type Listener = (s: ManualEventsState) => void;
 
 let cache: ManualEventsState = {
   events: [],
+  participantNames: {},
   loading: true,
   error: null,
 };
@@ -44,14 +46,37 @@ async function load(): Promise<ManualEventsState> {
     const res = await fetch("/api/manual-events", { cache: "no-store" });
     if (!res.ok) {
       if (res.status === 401) {
-        return { events: [], loading: false, error: null };
+        return {
+          events: [],
+          participantNames: {},
+          loading: false,
+          error: null,
+        };
       }
-      return { events: [], loading: false, error: `http_${res.status}` };
+      return {
+        events: [],
+        participantNames: {},
+        loading: false,
+        error: `http_${res.status}`,
+      };
     }
-    const data = (await res.json()) as { events: ManualEvent[] };
-    return { events: data.events, loading: false, error: null };
+    const data = (await res.json()) as {
+      events: ManualEvent[];
+      participantNames?: Record<string, string>;
+    };
+    return {
+      events: data.events,
+      participantNames: data.participantNames ?? {},
+      loading: false,
+      error: null,
+    };
   } catch (err) {
-    return { events: [], loading: false, error: (err as Error).message };
+    return {
+      events: [],
+      participantNames: {},
+      loading: false,
+      error: (err as Error).message,
+    };
   }
 }
 
@@ -70,7 +95,12 @@ export function useManualEvents() {
     if (session.loading) return;
     if (!session.email) {
       cachedForEmail = null;
-      setShared({ events: [], loading: false, error: null });
+      setShared({
+        events: [],
+        participantNames: {},
+        loading: false,
+        error: null,
+      });
       return;
     }
     if (cachedForEmail === session.email && !cache.loading) return;
@@ -89,6 +119,7 @@ export function useManualEvents() {
       note: string | null;
       maxSeats?: number | null;
       guests?: string[];
+      sharedWith?: string[];
     }): Promise<{ id: number; shareToken: string | null }> => {
       const res = await fetch("/api/manual-events", {
         method: "POST",

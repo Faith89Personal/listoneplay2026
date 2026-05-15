@@ -50,6 +50,16 @@ export async function GET(
     const isFull =
       typeof r.max_seats === "number" && occupied >= r.max_seats;
     const exposeEmails = isOwner || isJoined;
+    const participantNames: Record<string, string> = {};
+    if (exposeEmails) {
+      const lookupEmails = [r.email, ...sharedWith];
+      const nameRows = (await sql`
+        SELECT email, name FROM users WHERE email = ANY(${lookupEmails})
+      `) as { email: string; name: string | null }[];
+      for (const u of nameRows) {
+        if (u.name && u.name.trim().length > 0) participantNames[u.email] = u.name;
+      }
+    }
     return NextResponse.json({
       kind: "manual" as const,
       reservation: {
@@ -65,6 +75,7 @@ export async function GET(
         ownerEmail: exposeEmails ? r.email : null,
         sharedWith: exposeEmails ? sharedWith : [],
         guests,
+        participantNames,
       },
       viewer: {
         loggedIn: !!session?.email,

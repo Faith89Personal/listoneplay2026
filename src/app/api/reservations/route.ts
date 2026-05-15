@@ -48,8 +48,25 @@ export async function GET() {
          OR ${session.email} = ANY(shared_with)
       ORDER BY reserved_at ASC
     `) as ReservationRow[];
+
+    const emails = new Set<string>();
+    for (const r of rows) {
+      emails.add(r.email);
+      for (const e of r.shared_with ?? []) emails.add(e);
+    }
+    const participantNames: Record<string, string> = {};
+    if (emails.size > 0) {
+      const nameRows = (await sql`
+        SELECT email, name FROM users WHERE email = ANY(${[...emails]})
+      `) as { email: string; name: string | null }[];
+      for (const u of nameRows) {
+        if (u.name && u.name.trim().length > 0) participantNames[u.email] = u.name;
+      }
+    }
+
     return NextResponse.json({
       reservations: rows.map((r) => rowToJson(r, session.email)),
+      participantNames,
     });
   } catch (err) {
     return NextResponse.json(
@@ -66,6 +83,7 @@ type UpsertBody = {
   note?: unknown;
   maxSeats?: unknown;
   guests?: unknown;
+  sharedWith?: unknown;
 };
 
 function newShareToken(): string {
@@ -117,22 +135,35 @@ export async function POST(req: Request) {
         .filter((g) => g.length > 0)
         .slice(0, 20)
     : [];
+  const sharedWithFromBody = Array.isArray(body.sharedWith)
+    ? (body.sharedWith as unknown[])
+        .filter((s): s is string => typeof s === "string")
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => s.length > 0 && s !== session.email)
+        .slice(0, 20)
+    : null;
   const candidateToken = newShareToken();
   try {
     const sql = requireSql();
+    const initialSharedWith = sharedWithFromBody ?? [];
     const rows = (await sql`
       INSERT INTO reservations
         (email, item_id, reserved_at, duration_minutes, note, max_seats,
-         share_token, guests, updated_at)
+         share_token, guests, shared_with, updated_at)
       VALUES
         (${session.email}, ${itemId}, ${parsed.toISOString()}, ${duration},
-         ${note}, ${maxSeats}, ${candidateToken}, ${guests}, NOW())
+         ${note}, ${maxSeats}, ${candidateToken}, ${guests},
+         ${initialSharedWith}, NOW())
       ON CONFLICT (email, item_id)
       DO UPDATE SET reserved_at = EXCLUDED.reserved_at,
                     duration_minutes = EXCLUDED.duration_minutes,
                     note = EXCLUDED.note,
                     max_seats = EXCLUDED.max_seats,
                     guests = EXCLUDED.guests,
+                    shared_with = CASE
+                      WHEN ${sharedWithFromBody !== null} THEN EXCLUDED.shared_with
+                      ELSE reservations.shared_with
+                    END,
                     share_token = COALESCE(reservations.share_token,
                                            EXCLUDED.share_token),
                     updated_at = NOW()

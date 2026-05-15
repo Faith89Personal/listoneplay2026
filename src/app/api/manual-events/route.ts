@@ -56,8 +56,25 @@ export async function GET() {
          OR ${session.email} = ANY(shared_with)
       ORDER BY reserved_at ASC
     `) as Row[];
+
+    const emails = new Set<string>();
+    for (const r of rows) {
+      emails.add(r.email);
+      for (const e of r.shared_with ?? []) emails.add(e);
+    }
+    const participantNames: Record<string, string> = {};
+    if (emails.size > 0) {
+      const nameRows = (await sql`
+        SELECT email, name FROM users WHERE email = ANY(${[...emails]})
+      `) as { email: string; name: string | null }[];
+      for (const u of nameRows) {
+        if (u.name && u.name.trim().length > 0) participantNames[u.email] = u.name;
+      }
+    }
+
     return NextResponse.json({
       events: rows.map((r) => rowToJson(r, session.email)),
+      participantNames,
     });
   } catch (err) {
     return NextResponse.json(
@@ -76,6 +93,7 @@ type PostBody = {
   note?: unknown;
   maxSeats?: unknown;
   guests?: unknown;
+  sharedWith?: unknown;
 };
 
 export async function POST(req: Request) {
@@ -128,6 +146,13 @@ export async function POST(req: Request) {
         .filter((g) => g.length > 0)
         .slice(0, 20)
     : [];
+  const sharedWithFromBody = Array.isArray(body.sharedWith)
+    ? (body.sharedWith as unknown[])
+        .filter((s): s is string => typeof s === "string")
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => s.length > 0 && s !== session.email)
+        .slice(0, 20)
+    : null;
   const id = typeof body.id === "number" && body.id > 0 ? body.id : null;
 
   try {
@@ -142,6 +167,10 @@ export async function POST(req: Request) {
           note = ${note},
           max_seats = ${maxSeats},
           guests = ${guests},
+          shared_with = CASE
+            WHEN ${sharedWithFromBody !== null} THEN ${sharedWithFromBody ?? []}
+            ELSE shared_with
+          END,
           updated_at = NOW()
         WHERE id = ${id} AND email = ${session.email}
         RETURNING id, share_token
