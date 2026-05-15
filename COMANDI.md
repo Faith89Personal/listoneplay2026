@@ -61,6 +61,17 @@ Poi commit + push come sopra.
 
 ---
 
+## Sostituire l'icona dell'app
+
+Il file `icon.jpg` è presente in **3 posizioni** che devono restare in sync:
+- `public/icon.jpg` — referenziato dal manifest PWA
+- `src/app/icon.jpg` — favicon del browser (Next.js auto-inietta)
+- `src/app/apple-icon.jpg` — icona "Aggiungi a Home" su iOS
+
+Copia il nuovo file in tutte e tre. Per la notifica push, l'icona piccola in barra di stato è generata da `src/app/api/badge/route.tsx` (3 barre bianche monocromo) — modifica lì se vuoi cambiarla.
+
+---
+
 ## Migrazioni DB
 
 ```bash
@@ -72,6 +83,17 @@ Esegue tutte le `CREATE TABLE IF NOT EXISTS` / `ALTER ... IF NOT EXISTS` definit
 Va lanciato:
 - La prima volta su un DB Neon vuoto
 - Dopo aver aggiornato `scripts/migrate.mjs` con nuove tabelle/colonne
+
+Tabelle attuali:
+- `users` (email, name)
+- `selections` (look/play/buy state per item)
+- `reservations` (tavolo prenotato, con share_token, max_seats, shared_with, guests)
+- `manual_events` (eventi manuali in calendario, stessi campi sharing)
+- `manual_items` (giochi aggiunti dall'utente al listone, id negativo per utente)
+- `manual_plays` (giocati fuori listone con voto)
+- `plays` (voti su giochi catalogo)
+- `rushes` (stand da raggiungere la mattina presto)
+- `push_subscriptions` (subscription web push degli utenti)
 
 ---
 
@@ -134,14 +156,26 @@ File `.env.local` (gitignored, locale):
 | `DATABASE_URL` | Connection string Neon | `npm run migrate`, app a runtime |
 | `SESSION_SECRET` | Hex 64 chars per firma cookie | App a runtime |
 | `BGG_TOKEN` | Bearer token BGG | Solo `npm run bgg-refresh` |
+| `VAPID_PUBLIC_KEY` | Chiave pubblica web push | Lib `web-push` lato server |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Copia della pubblica per il client | `PushManager.subscribe` |
+| `VAPID_PRIVATE_KEY` | Chiave privata web push | Firma push lato server |
+| `VAPID_SUBJECT` | `mailto:tuamail` per il VAPID | Header VAPID per push services |
 
-Su Vercel devono essere settate (Settings → Environment Variables):
+### Su Vercel
+Settings → Environment Variables, devono essere presenti (sia Production che Preview/Development):
 - `DATABASE_URL`
 - `SESSION_SECRET`
+- `VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
 
-`BGG_TOKEN` non serve su Vercel (lo script gira solo locale).
+`BGG_TOKEN` non serve su Vercel (lo script gira solo in locale).
 
 Dopo aver aggiornato un env var su Vercel: Deployments → ultimo → Redeploy.
+
+### Generare VAPID keys da zero (solo se devi rifarle)
+```bash
+npx web-push generate-vapid-keys --json
+```
+Pubblica/privata in output, copiale in `.env.local` E nelle env Vercel. Nota: se cambi le chiavi, tutte le subscription esistenti diventano invalide e gli utenti devono ri-abilitare le notifiche.
 
 ---
 
@@ -159,11 +193,11 @@ Se vuoi vedere lo stato: dashboard Vercel → Deployments.
 
 ## Checklist "primo setup su un PC nuovo"
 
-1. Clona il repo
-2. `npm install`
-3. Copia `.env.local.example` in `.env.local` e riempi i valori
-4. `npm run migrate` (se è un DB nuovo)
-5. `npm run refresh-data` (popola JSON snapshot)
+1. `git clone https://github.com/Faith89Personal/listoneplay2026.git`
+2. `cd listoneplay2026 && npm install`
+3. Copia `.env.local.example` in `.env.local` e riempi tutti i valori (DATABASE_URL, SESSION_SECRET, VAPID_*; BGG_TOKEN se serve)
+4. `npm run migrate` (idempotente, si può lanciare comunque)
+5. (Opzionale) `npm run refresh-data` se vuoi rinfrescare lo snapshot — al primo clone i file ci sono già dal repo
 6. (Opzionale) `npm run bgg-refresh` per gli ID BGG
 7. `npm run dev` per testare in locale, oppure `git push` per andare in produzione
 
@@ -171,8 +205,8 @@ Se vuoi vedere lo stato: dashboard Vercel → Deployments.
 
 ## Domande frequenti
 
-**Q: Ho aggiornato editor-aliases.json ma sul telefono vedo ancora il vecchio.**
-Vercel cacha le route statiche per 10 min. O aspetti, o forzi un redeploy.
+**Q: Ho aggiornato editor-aliases.json o bgg-aliases.json ma sul telefono vedo ancora il vecchio.**
+Vercel cacha la route `/api/editors` e `/api/items` per ~10 min. O aspetti, o forzi un redeploy.
 
 **Q: Login fallisce con "DB non raggiungibile".**
 Manca `DATABASE_URL` su Vercel oppure il redeploy non è ancora stato fatto dopo averla aggiunta.
@@ -180,5 +214,27 @@ Manca `DATABASE_URL` su Vercel oppure il redeploy non è ancora stato fatto dopo
 **Q: Login fallisce con "SESSION_SECRET mancante su Vercel".**
 Stessa cosa per `SESSION_SECRET`.
 
+**Q: Le push notifications non arrivano.**
+Verifica:
+1. Le 4 var `VAPID_*` sono settate su Vercel
+2. Redeploy fatto dopo averle messe
+3. Il browser/PWA ha chiesto permesso e l'utente ha cliccato "Attiva notifiche" nel banner ambra
+4. Su iOS le push richiedono la PWA installata sulla home (Safari → Condividi → Aggiungi a Home)
+
+**Q: Sulla notifica vedo un quadrato bianco invece dell'icona.**
+È il comportamento di Android per il "badge" piccolo in barra di stato (lo forza a monocromo). Il file `src/app/api/badge/route.tsx` genera un PNG trasparente con 3 barre bianche, che dovrebbe apparire correttamente. Se vedi ancora un quadrato, prova a disinstallare e reinstallare la PWA per forzare il refresh del service worker.
+
 **Q: Ho rotto qualcosa, come faccio rollback?**
 Dashboard Vercel → Deployments → trovi un deploy precedente verde → menu `⋯` → "Promote to Production".
+
+---
+
+## Architettura veloce (per orientarsi)
+
+- **Frontend**: Next.js 15 (App Router) + TypeScript + Tailwind 4
+- **DB**: Neon Postgres (serverless)
+- **Auth**: trust-the-email + JWT in cookie HttpOnly, durata 90gg, gestito da `src/lib/session.ts`
+- **PWA**: manifest in `src/app/manifest.ts`, service worker in `public/sw.js`, install hint in `src/components/InstallHint.tsx`
+- **Push notifications**: `web-push` lato server (`src/lib/push.ts`), subscription gestite in `src/app/api/push/`, UI in `src/components/NotificationsHint.tsx`
+- **Dati upstream**: snapshot in `src/data/` (items.json, votes.json, editors.json, bgg.json, alias)
+- **API routes**: tutte in `src/app/api/`, usano runtime nodejs (eccetto `/api/badge` che è edge per ImageResponse)
