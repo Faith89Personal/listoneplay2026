@@ -11,13 +11,13 @@ import type { Item } from "@/types";
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <div className="flex shrink-0 items-center gap-0.5 text-amber-500">
+    <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
         <StarIcon
           key={n}
           filled={rating >= n}
           className={
-            "h-3.5 w-3.5 " + (rating >= n ? "text-amber-500" : "text-neutral-300")
+            "h-4 w-4 " + (rating >= n ? "text-amber-500" : "text-neutral-300")
           }
         />
       ))}
@@ -118,15 +118,15 @@ export default function PlayedListView() {
                   type="button"
                   onClick={() => item && setEditingItem(item)}
                   disabled={!item}
-                  className="flex w-full items-start gap-3 px-3 py-2 text-left text-sm active:bg-neutral-50 disabled:opacity-60"
+                  className="flex w-full flex-col gap-1 px-3 py-2 text-left text-sm active:bg-neutral-50 disabled:opacity-60"
                 >
-                  <div className="flex w-10 shrink-0 flex-col items-center pt-0.5">
-                    <span className="text-base font-bold text-amber-600">
-                      {play.rating}
-                    </span>
+                  <div className="flex items-center gap-2">
                     <Stars rating={play.rating} />
+                    <span className="text-xs font-bold text-amber-600">
+                      {play.rating}/5
+                    </span>
                   </div>
-                  <div className="flex flex-1 flex-col leading-tight">
+                  <div className="flex flex-col leading-tight">
                     <span className="font-medium">
                       {item?.name ?? `#${play.itemId}`}
                     </span>
