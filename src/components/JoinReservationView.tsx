@@ -18,6 +18,7 @@ type JoinReservation = {
   isFull: boolean;
   ownerEmail: string | null;
   sharedWith: string[];
+  guests: string[];
 };
 
 function emailToName(email: string): string {
@@ -206,12 +207,14 @@ export default function JoinReservationView({ token }: { token: string }) {
                   data.reservation.sharedWith.length > 0
                     ? " · "
                     : ""}
-                  {data.reservation.sharedWith.length > 0 && (
+                  {(data.reservation.sharedWith.length > 0 ||
+                    data.reservation.guests.length > 0) && (
                     <>
                       Insieme a:{" "}
-                      {data.reservation.sharedWith
-                        .map(emailToName)
-                        .join(", ")}
+                      {[
+                        ...data.reservation.sharedWith.map(emailToName),
+                        ...data.reservation.guests.map((g) => `${g} (guest)`),
+                      ].join(", ")}
                     </>
                   )}
                 </p>

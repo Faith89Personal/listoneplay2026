@@ -15,6 +15,7 @@ type ReservationRow = {
   share_token: string | null;
   max_seats: number | null;
   shared_with: string[] | null;
+  guests: string[] | null;
 };
 
 function rowToJson(r: ReservationRow, currentEmail: string) {
@@ -26,6 +27,7 @@ function rowToJson(r: ReservationRow, currentEmail: string) {
     shareToken: r.share_token,
     maxSeats: r.max_seats,
     sharedWith: r.shared_with ?? [],
+    guests: r.guests ?? [],
     ownerEmail: r.email,
     isOwner: r.email === currentEmail,
   };
@@ -40,7 +42,7 @@ export async function GET() {
     const sql = requireSql();
     const rows = (await sql`
       SELECT email, item_id, reserved_at, duration_minutes, note,
-             share_token, max_seats, shared_with
+             share_token, max_seats, shared_with, guests
       FROM reservations
       WHERE email = ${session.email}
          OR ${session.email} = ANY(shared_with)
@@ -63,6 +65,7 @@ type UpsertBody = {
   durationMinutes?: unknown;
   note?: unknown;
   maxSeats?: unknown;
+  guests?: unknown;
 };
 
 function newShareToken(): string {
@@ -107,21 +110,29 @@ export async function POST(req: Request) {
     body.maxSeats <= 20
       ? Math.round(body.maxSeats)
       : null;
+  const guests = Array.isArray(body.guests)
+    ? (body.guests as unknown[])
+        .filter((g): g is string => typeof g === "string")
+        .map((g) => g.trim().slice(0, 80))
+        .filter((g) => g.length > 0)
+        .slice(0, 20)
+    : [];
   const candidateToken = newShareToken();
   try {
     const sql = requireSql();
     const rows = (await sql`
       INSERT INTO reservations
         (email, item_id, reserved_at, duration_minutes, note, max_seats,
-         share_token, updated_at)
+         share_token, guests, updated_at)
       VALUES
         (${session.email}, ${itemId}, ${parsed.toISOString()}, ${duration},
-         ${note}, ${maxSeats}, ${candidateToken}, NOW())
+         ${note}, ${maxSeats}, ${candidateToken}, ${guests}, NOW())
       ON CONFLICT (email, item_id)
       DO UPDATE SET reserved_at = EXCLUDED.reserved_at,
                     duration_minutes = EXCLUDED.duration_minutes,
                     note = EXCLUDED.note,
                     max_seats = EXCLUDED.max_seats,
+                    guests = EXCLUDED.guests,
                     share_token = COALESCE(reservations.share_token,
                                            EXCLUDED.share_token),
                     updated_at = NOW()

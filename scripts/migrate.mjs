@@ -12,8 +12,10 @@ const sql = neon(url);
 const statements = [
   `CREATE TABLE IF NOT EXISTS users (
     email TEXT PRIMARY KEY,
+    name TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT`,
   `CREATE TABLE IF NOT EXISTS selections (
     email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
     item_id INTEGER NOT NULL,
@@ -37,6 +39,7 @@ const statements = [
   `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS max_seats INTEGER`,
   `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS shared_with TEXT[] NOT NULL DEFAULT '{}'`,
   `CREATE UNIQUE INDEX IF NOT EXISTS reservations_share_token_idx ON reservations (share_token) WHERE share_token IS NOT NULL`,
+  `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS guests TEXT[] NOT NULL DEFAULT '{}'`,
   `CREATE TABLE IF NOT EXISTS manual_events (
     id SERIAL PRIMARY KEY,
     email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,

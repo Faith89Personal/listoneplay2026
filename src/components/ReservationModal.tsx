@@ -66,6 +66,8 @@ export default function ReservationModal({
   const [maxSeats, setMaxSeats] = useState<string>(
     existing?.maxSeats ? String(existing.maxSeats) : "",
   );
+  const [guests, setGuests] = useState<string[]>(existing?.guests ?? []);
+  const [guestInput, setGuestInput] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +108,7 @@ export default function ReservationModal({
         durationMinutes: duration,
         note: note.trim() || null,
         maxSeats: seatsValid ? Math.round(seatsNum) : null,
+        guests,
       });
       onClose();
     } catch (err) {
@@ -213,15 +216,21 @@ export default function ReservationModal({
             )}
             {existing.maxSeats !== null && (
               <p className="text-amber-700">
-                👥 {1 + existing.sharedWith.length}/{existing.maxSeats} posti occupati
+                👥{" "}
+                {1 + existing.sharedWith.length + existing.guests.length}/
+                {existing.maxSeats} posti occupati
               </p>
             )}
-            {existing.sharedWith.length > 0 && (
+            {(existing.sharedWith.length > 0 ||
+              existing.guests.length > 0) && (
               <p className="text-xs text-neutral-600">
-                Insieme a te: {existing.sharedWith
-                  .filter((e) => e !== existing.ownerEmail)
-                  .map(emailToName)
-                  .join(", ")}
+                Insieme a te:{" "}
+                {[
+                  ...existing.sharedWith
+                    .filter((e) => e !== existing.ownerEmail)
+                    .map(emailToName),
+                  ...existing.guests.map((g) => `${g} (guest)`),
+                ].join(", ")}
               </p>
             )}
             {existing.note && (
@@ -380,6 +389,67 @@ export default function ReservationModal({
               />
             </label>
 
+            <div>
+              <span className="mb-1 block text-xs font-medium text-neutral-600">
+                Guest (opzionale, contano nei posti occupati)
+              </span>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={guestInput}
+                  onChange={(e) => setGuestInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      const v = guestInput.trim();
+                      if (v && !guests.includes(v) && guests.length < 20) {
+                        setGuests([...guests, v]);
+                      }
+                      setGuestInput("");
+                    }
+                  }}
+                  maxLength={80}
+                  placeholder="es. Marco · invio per aggiungere"
+                  className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = guestInput.trim();
+                    if (v && !guests.includes(v) && guests.length < 20) {
+                      setGuests([...guests, v]);
+                    }
+                    setGuestInput("");
+                  }}
+                  className="rounded-md bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-700"
+                >
+                  +
+                </button>
+              </div>
+              {guests.length > 0 && (
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {guests.map((g) => (
+                    <li
+                      key={g}
+                      className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 text-xs text-neutral-800"
+                    >
+                      {g}
+                      <button
+                        type="button"
+                        aria-label={`Rimuovi ${g}`}
+                        onClick={() =>
+                          setGuests(guests.filter((x) => x !== g))
+                        }
+                        className="text-neutral-500"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-neutral-600">
                 Nota (opzionale)
@@ -411,7 +481,8 @@ export default function ReservationModal({
                       existing.reservedAt,
                       existing.durationMinutes,
                     );
-                    const occupied = 1 + existing.sharedWith.length;
+                    const occupied =
+                      1 + existing.sharedWith.length + existing.guests.length;
                     const seatsLine =
                       existing.maxSeats
                         ? `\n👥 ${occupied}/${existing.maxSeats} posti occupati`
@@ -460,16 +531,17 @@ export default function ReservationModal({
               </button>
             )}
 
-            {existing && existing.isOwner && existing.sharedWith.length > 0 && (
-              <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
-                <span className="font-semibold">
-                  {existing.sharedWith.length} amic
-                  {existing.sharedWith.length === 1 ? "o" : "i"} unit
-                  {existing.sharedWith.length === 1 ? "o" : "i"}:
-                </span>{" "}
-                {existing.sharedWith.map(emailToName).join(", ")}
-              </p>
-            )}
+            {existing &&
+              existing.isOwner &&
+              (existing.sharedWith.length > 0 || existing.guests.length > 0) && (
+                <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
+                  <span className="font-semibold">Partecipanti:</span>{" "}
+                  {[
+                    ...existing.sharedWith.map(emailToName),
+                    ...existing.guests.map((g) => `${g} (guest)`),
+                  ].join(", ")}
+                </p>
+              )}
 
             {error && (
               <p

@@ -16,15 +16,30 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
-  const raw = (body as { email?: unknown })?.email;
-  if (!isValidEmail(raw)) {
+  const rawEmail = (body as { email?: unknown })?.email;
+  if (!isValidEmail(rawEmail)) {
     return NextResponse.json({ error: "invalid_email" }, { status: 400 });
   }
-  const email = normalizeEmail(raw);
+  const email = normalizeEmail(rawEmail);
+  const rawName = (body as { name?: unknown })?.name;
+  const name =
+    typeof rawName === "string" && rawName.trim().length > 0
+      ? rawName.trim().slice(0, 80)
+      : null;
 
   try {
     const sql = requireSql();
-    await sql`INSERT INTO users (email) VALUES (${email}) ON CONFLICT (email) DO NOTHING`;
+    if (name) {
+      await sql`
+        INSERT INTO users (email, name) VALUES (${email}, ${name})
+        ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
+      `;
+    } else {
+      await sql`
+        INSERT INTO users (email) VALUES (${email})
+        ON CONFLICT (email) DO NOTHING
+      `;
+    }
   } catch (err) {
     console.error("[auth/login] db error:", err);
     return NextResponse.json(
@@ -42,5 +57,5 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
-  return NextResponse.json({ email });
+  return NextResponse.json({ email, name });
 }

@@ -11,6 +11,7 @@ export type Reservation = {
   shareToken: string | null;
   maxSeats: number | null;
   sharedWith: string[];
+  guests: string[];
   ownerEmail: string;
   isOwner: boolean;
 };
@@ -107,6 +108,7 @@ export function useReservations() {
       durationMinutes: number;
       note: string | null;
       maxSeats: number | null;
+      guests?: string[];
     }) => {
       const res = await fetch("/api/reservations", {
         method: "POST",

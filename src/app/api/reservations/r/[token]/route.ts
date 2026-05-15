@@ -22,6 +22,7 @@ type ReservationRow = {
   share_token: string;
   max_seats: number | null;
   shared_with: string[] | null;
+  guests: string[] | null;
 };
 
 function lookupItem(itemId: number): {
@@ -57,7 +58,7 @@ export async function GET(
     const sql = requireSql();
     const rows = (await sql`
       SELECT email, item_id, reserved_at, duration_minutes, note,
-             share_token, max_seats, shared_with
+             share_token, max_seats, shared_with, guests
       FROM reservations
       WHERE share_token = ${token}
       LIMIT 1
@@ -68,9 +69,10 @@ export async function GET(
     const r = rows[0];
     const session = await getSessionFromCookies();
     const sharedWith = r.shared_with ?? [];
+    const guests = r.guests ?? [];
     const isOwner = session?.email === r.email;
     const isJoined = !!session?.email && sharedWith.includes(session.email);
-    const occupied = 1 + sharedWith.length;
+    const occupied = 1 + sharedWith.length + guests.length;
     const isFull =
       typeof r.max_seats === "number" && occupied >= r.max_seats;
     const info = lookupItem(r.item_id);
@@ -89,6 +91,7 @@ export async function GET(
         isFull,
         ownerEmail: exposeEmails ? r.email : null,
         sharedWith: exposeEmails ? sharedWith : [],
+        guests,
       },
       viewer: {
         loggedIn: !!session?.email,
@@ -120,9 +123,14 @@ export async function POST(
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT email, max_seats, shared_with
+      SELECT email, max_seats, shared_with, guests
       FROM reservations WHERE share_token = ${token} LIMIT 1
-    `) as { email: string; max_seats: number | null; shared_with: string[] | null }[];
+    `) as {
+      email: string;
+      max_seats: number | null;
+      shared_with: string[] | null;
+      guests: string[] | null;
+    }[];
     if (rows.length === 0) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
@@ -131,13 +139,12 @@ export async function POST(
       return NextResponse.json({ error: "is_owner" }, { status: 400 });
     }
     const sharedWith = row.shared_with ?? [];
+    const guests = row.guests ?? [];
     if (sharedWith.includes(session.email)) {
       return NextResponse.json({ ok: true, already: true });
     }
-    if (
-      typeof row.max_seats === "number" &&
-      sharedWith.length + 1 >= row.max_seats
-    ) {
+    const occupiedAfter = 1 + sharedWith.length + guests.length + 1;
+    if (typeof row.max_seats === "number" && occupiedAfter > row.max_seats) {
       return NextResponse.json({ error: "full" }, { status: 409 });
     }
     await sql`
