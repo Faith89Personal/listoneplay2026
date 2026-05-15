@@ -18,6 +18,11 @@ function isIosSafari(): boolean {
   return !/CriOS|FxiOS|EdgiOS|FBAN|FBAV|Instagram|Twitter|Line/i.test(ua);
 }
 
+function isAndroid(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android/i.test(navigator.userAgent);
+}
+
 function isStandalone(): boolean {
   if (typeof window === "undefined") return false;
   const standalone =
@@ -66,6 +71,11 @@ export default function InstallHint() {
       setMode("ios");
       setVisible(true);
       return;
+    }
+
+    if (isAndroid()) {
+      setMode("android");
+      setVisible(true);
     }
 
     function onBeforeInstall(e: Event) {
@@ -131,10 +141,13 @@ export default function InstallHint() {
             </>
           ) : (
             <>
-              <span className="font-semibold">Installa l&apos;app</span>
+              <span className="font-semibold">
+                Aggiungi alla home del telefono
+              </span>
               <p className="mt-0.5 text-xs text-neutral-700">
-                Aggiungi Listone Play alla home del telefono per aprirla con
-                un tocco.
+                {promptEvent
+                  ? "Tocca Installa per creare lo shortcut Listone Play."
+                  : "Apri il menu di Chrome (⋮ in alto a destra) e tocca «Installa app» o «Aggiungi a schermata Home»."}
               </p>
             </>
           )}
