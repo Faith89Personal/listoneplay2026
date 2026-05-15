@@ -25,12 +25,14 @@ codice e identificatori in inglese.
 
 ## Ambiente di sviluppo (importante!)
 
-- **Working dir**: `C:\Users\D00D950\OneDrive - Nexi Group\Repository Claude\listoneplay2026`
+- **Working dir**: variabile per PC (l'utente lavora da più macchine). NON
+  assumere un percorso assoluto: usa sempre percorsi relativi alla root del
+  repo. Esempi noti: OneDrive Nexi aziendale, oppure `C:\xampp\htdocs`.
 - **OS**: Windows 11, shell PowerShell (NON bash). Usa sintassi PowerShell per
   comandi shell. `Get-ChildItem`, `Remove-Item`, ecc.
-- **OneDrive aziendale Nexi**: la cartella sincronizza su OneDrive aziendale.
-  L'utente lo sa e ha accettato che `.env.local` (con secrets) ci stia dentro.
-  Non insistere sulla sicurezza — già discusso.
+- **OneDrive aziendale Nexi** (solo su alcuni PC): se la cartella sincronizza
+  su OneDrive aziendale, l'utente lo sa e ha accettato che `.env.local` (con
+  secrets) ci stia dentro. Non insistere sulla sicurezza — già discusso.
 - **Proxy aziendale**: la rete Nexi blocca o complica `fetch` Node verso:
   - `list.giochisulnostrotavolo.it` (API upstream listone)
   - `boardgamegeek.com` (XML API)

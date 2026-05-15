@@ -176,10 +176,6 @@ export default function ReservationModal({
     setShareBusy(true);
     try {
       const url = `${window.location.origin}/r/${shareToken}`;
-      const dayLabel =
-        EVENT_DAYS.find(
-          (d) => d.date === utcIsoToRomeParts(candidate.reservedAt).date,
-        )?.short ?? "";
       const range = formatRangeShort(candidate.reservedAt, duration);
       const seatLine =
         maxSeats !== null
@@ -196,7 +192,7 @@ export default function ReservationModal({
       const text =
         `🎲 Sto prenotando: ${item.name}` +
         editorLine +
-        `\n📅 ${dayLabel} ${range}` +
+        `\n📅 ${range}` +
         seatLine +
         `\n\nUnisciti 👉 ${url}`;
       if (typeof navigator !== "undefined" && navigator.share) {
