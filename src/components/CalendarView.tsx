@@ -153,6 +153,7 @@ export default function CalendarView() {
         itemsById.get(r.itemId)
           ? (editorStands[itemsById.get(r.itemId)!.editor.name]?.stands ?? [])
           : [],
+        r.manualItemName,
       ),
     );
     const manualBlocks = events.map(manualToBlock);

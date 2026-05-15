@@ -14,6 +14,8 @@ export type Reservation = {
   guests: string[];
   ownerEmail: string;
   isOwner: boolean;
+  isPrivate: boolean;
+  manualItemName: string | null;
 };
 
 export type ReservationsState = {
@@ -136,6 +138,7 @@ export function useReservations() {
       maxSeats: number | null;
       guests?: string[];
       sharedWith?: string[];
+      isPrivate?: boolean;
     }): Promise<{ shareToken: string | null }> => {
       const res = await fetch("/api/reservations", {
         method: "POST",

@@ -18,6 +18,7 @@ type Row = {
   max_seats: number | null;
   shared_with: string[] | null;
   guests: string[] | null;
+  is_private: boolean;
 };
 
 function newShareToken(): string {
@@ -38,6 +39,7 @@ function rowToJson(r: Row, currentEmail: string) {
     guests: r.guests ?? [],
     ownerEmail: r.email,
     isOwner: r.email === currentEmail,
+    isPrivate: r.is_private,
   };
 }
 
@@ -53,13 +55,14 @@ export async function GET(req: Request) {
     const rows = (scopeAll
       ? await sql`
           SELECT id, email, name, reserved_at, duration_minutes, stand, note,
-                 share_token, max_seats, shared_with, guests
+                 share_token, max_seats, shared_with, guests, is_private
           FROM manual_events
+          WHERE is_private = FALSE
           ORDER BY reserved_at ASC
         `
       : await sql`
           SELECT id, email, name, reserved_at, duration_minutes, stand, note,
-                 share_token, max_seats, shared_with, guests
+                 share_token, max_seats, shared_with, guests, is_private
           FROM manual_events
           WHERE email = ${session.email}
              OR ${session.email} = ANY(shared_with)
@@ -103,6 +106,7 @@ type PostBody = {
   maxSeats?: unknown;
   guests?: unknown;
   sharedWith?: unknown;
+  isPrivate?: unknown;
 };
 
 export async function POST(req: Request) {
@@ -162,6 +166,7 @@ export async function POST(req: Request) {
         .filter((s) => s.length > 0 && s !== session.email)
         .slice(0, 20)
     : null;
+  const isPrivate = body.isPrivate === true;
   const id = typeof body.id === "number" && body.id > 0 ? body.id : null;
 
   try {
@@ -200,6 +205,7 @@ export async function POST(req: Request) {
           note = ${note},
           max_seats = ${maxSeats},
           guests = ${guests},
+          is_private = ${isPrivate},
           shared_with = CASE
             WHEN ${sharedWithFromBody !== null} THEN ${sharedWithFromBody ?? []}
             ELSE shared_with
@@ -221,10 +227,10 @@ export async function POST(req: Request) {
     const inserted = (await sql`
       INSERT INTO manual_events
         (email, name, reserved_at, duration_minutes, stand, note,
-         max_seats, share_token, guests)
+         max_seats, share_token, guests, is_private)
       VALUES
         (${session.email}, ${name}, ${parsed.toISOString()}, ${duration},
-         ${stand}, ${note}, ${maxSeats}, ${token}, ${guests})
+         ${stand}, ${note}, ${maxSeats}, ${token}, ${guests}, ${isPrivate})
       RETURNING id, share_token
     `) as { id: number; share_token: string }[];
     return NextResponse.json({

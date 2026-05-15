@@ -16,6 +16,7 @@ export type ManualEvent = {
   guests: string[];
   ownerEmail: string;
   isOwner: boolean;
+  isPrivate: boolean;
 };
 
 export type ManualEventsState = {
@@ -120,6 +121,7 @@ export function useManualEvents() {
       maxSeats?: number | null;
       guests?: string[];
       sharedWith?: string[];
+      isPrivate?: boolean;
     }): Promise<{ id: number; shareToken: string | null }> => {
       const res = await fetch("/api/manual-events", {
         method: "POST",

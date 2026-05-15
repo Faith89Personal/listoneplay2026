@@ -30,13 +30,14 @@ export function reservationToBlock(
   r: Reservation,
   item: Item | null,
   stands: string[],
+  fallbackTitle?: string | null,
 ): CalendarBlock {
   return {
     key: reservationKey(r.itemId) + "/" + r.ownerEmail,
     kind: "reservation",
     reservedAt: r.reservedAt,
     durationMinutes: r.durationMinutes,
-    title: item?.name ?? `#${r.itemId}`,
+    title: item?.name ?? fallbackTitle ?? `#${r.itemId}`,
     editorName: item?.editor.name ?? null,
     stand: stands.length > 0 ? stands.join("·") : null,
     note: r.note,

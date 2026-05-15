@@ -40,6 +40,7 @@ const statements = [
   `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS shared_with TEXT[] NOT NULL DEFAULT '{}'`,
   `CREATE UNIQUE INDEX IF NOT EXISTS reservations_share_token_idx ON reservations (share_token) WHERE share_token IS NOT NULL`,
   `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS guests TEXT[] NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT FALSE`,
   `ALTER TABLE manual_events ADD COLUMN IF NOT EXISTS share_token TEXT`,
   `ALTER TABLE manual_events ADD COLUMN IF NOT EXISTS max_seats INTEGER`,
   `ALTER TABLE manual_events ADD COLUMN IF NOT EXISTS shared_with TEXT[] NOT NULL DEFAULT '{}'`,
@@ -56,6 +57,7 @@ const statements = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `ALTER TABLE manual_events ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT FALSE`,
   `CREATE TABLE IF NOT EXISTS plays (
     email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
     item_id INTEGER NOT NULL,

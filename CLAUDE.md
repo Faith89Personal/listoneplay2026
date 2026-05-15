@@ -101,10 +101,12 @@ codice e identificatori in inglese.
 - `selections(email, item_id, flag, state)` — stato delle 3 caselle per gioco
   (look/play/buy × checked/forbidden). Item_id può essere negativo (manual).
 - `reservations(email, item_id, reserved_at, duration_minutes, note,
-  share_token, max_seats, shared_with[], guests[])` — PK (email, item_id).
-  share_token UNIQUE per link join.
+  share_token, max_seats, shared_with[], guests[], is_private)` — PK
+  (email, item_id). share_token UNIQUE per link join. is_private = escluso
+  dal calendario comune (?scope=all), visibile solo all'owner.
 - `manual_events` — eventi calendario non legati a item catalogo. SERIAL id,
-  stesso pattern sharing (share_token, max_seats, shared_with, guests).
+  stesso pattern sharing (share_token, max_seats, shared_with, guests,
+  is_private).
 - `manual_items` — giochi aggiunti dall'utente al listone. PK (email, id) con
   CHECK id < 0 per non collidere con catalogo (positivi). Negativi assegnati
   con `COALESCE(MIN(id), 0) - 1` scoped al singolo utente.
@@ -151,6 +153,11 @@ scelte):
 17. Web Push notifications quando qualcuno si unisce
 18. Nome utente obbligatorio + edit, partecipantNames lookup, chip
     rimuovibili, capacity hard-limit
+19. Calendario comune (toggle Tutti/Comune in /prenotazioni): vista
+    read-only di tutte le prenotazioni+eventi del gruppo via ?scope=all,
+    hook separato useCommonCalendar, CommonDetailModal. Toggle "Evento
+    privato" (is_private) per escludere dal comune. Nomi manual items
+    altrui risolti via LEFT JOIN manual_items in /api/reservations.
 
 Quando l'utente chiede nuove feature, prima di iniziare a scrivere codice
 considera se ricicli pattern già stabiliti:

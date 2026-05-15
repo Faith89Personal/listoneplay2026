@@ -16,6 +16,8 @@ type ReservationRow = {
   max_seats: number | null;
   shared_with: string[] | null;
   guests: string[] | null;
+  is_private: boolean;
+  manual_item_name?: string | null;
 };
 
 function rowToJson(r: ReservationRow, currentEmail: string) {
@@ -30,6 +32,8 @@ function rowToJson(r: ReservationRow, currentEmail: string) {
     guests: r.guests ?? [],
     ownerEmail: r.email,
     isOwner: r.email === currentEmail,
+    isPrivate: r.is_private,
+    manualItemName: r.manual_item_name ?? null,
   };
 }
 
@@ -44,14 +48,18 @@ export async function GET(req: Request) {
     const sql = requireSql();
     const rows = (scopeAll
       ? await sql`
-          SELECT email, item_id, reserved_at, duration_minutes, note,
-                 share_token, max_seats, shared_with, guests
-          FROM reservations
-          ORDER BY reserved_at ASC
+          SELECT r.email, r.item_id, r.reserved_at, r.duration_minutes, r.note,
+                 r.share_token, r.max_seats, r.shared_with, r.guests,
+                 r.is_private, mi.name AS manual_item_name
+          FROM reservations r
+          LEFT JOIN manual_items mi
+            ON mi.email = r.email AND mi.id = r.item_id
+          WHERE r.is_private = FALSE
+          ORDER BY r.reserved_at ASC
         `
       : await sql`
           SELECT email, item_id, reserved_at, duration_minutes, note,
-                 share_token, max_seats, shared_with, guests
+                 share_token, max_seats, shared_with, guests, is_private
           FROM reservations
           WHERE email = ${session.email}
              OR ${session.email} = ANY(shared_with)
@@ -93,6 +101,7 @@ type UpsertBody = {
   maxSeats?: unknown;
   guests?: unknown;
   sharedWith?: unknown;
+  isPrivate?: unknown;
 };
 
 function newShareToken(): string {
@@ -151,6 +160,7 @@ export async function POST(req: Request) {
         .filter((s) => s.length > 0 && s !== session.email)
         .slice(0, 20)
     : null;
+  const isPrivate = body.isPrivate === true;
   const candidateToken = newShareToken();
   try {
     const sql = requireSql();
@@ -180,17 +190,18 @@ export async function POST(req: Request) {
     const rows = (await sql`
       INSERT INTO reservations
         (email, item_id, reserved_at, duration_minutes, note, max_seats,
-         share_token, guests, shared_with, updated_at)
+         share_token, guests, shared_with, is_private, updated_at)
       VALUES
         (${session.email}, ${itemId}, ${parsed.toISOString()}, ${duration},
          ${note}, ${maxSeats}, ${candidateToken}, ${guests},
-         ${initialSharedWith}, NOW())
+         ${initialSharedWith}, ${isPrivate}, NOW())
       ON CONFLICT (email, item_id)
       DO UPDATE SET reserved_at = EXCLUDED.reserved_at,
                     duration_minutes = EXCLUDED.duration_minutes,
                     note = EXCLUDED.note,
                     max_seats = EXCLUDED.max_seats,
                     guests = EXCLUDED.guests,
+                    is_private = EXCLUDED.is_private,
                     shared_with = CASE
                       WHEN ${sharedWithFromBody !== null} THEN EXCLUDED.shared_with
                       ELSE reservations.shared_with

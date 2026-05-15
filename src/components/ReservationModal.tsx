@@ -77,6 +77,9 @@ export default function ReservationModal({
   const [sharedWith, setSharedWith] = useState<string[]>(
     existing?.sharedWith ?? [],
   );
+  const [isPrivate, setIsPrivate] = useState<boolean>(
+    existing?.isPrivate ?? false,
+  );
   const [busy, setBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +117,7 @@ export default function ReservationModal({
         maxSeats: maxSeats,
         guests,
         sharedWith,
+        isPrivate,
       });
       setSavedToken(
         result.shareToken ?? existing?.shareToken ?? null,
@@ -501,6 +505,40 @@ export default function ReservationModal({
                 })}
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsPrivate((v) => !v)}
+              aria-pressed={isPrivate}
+              className={
+                "flex w-full items-center justify-between rounded-md border px-3 py-2 text-left " +
+                (isPrivate
+                  ? "border-brand-dark bg-brand-soft"
+                  : "border-neutral-300 bg-white")
+              }
+            >
+              <span className="flex flex-col">
+                <span className="text-sm font-medium text-neutral-800">
+                  Evento privato
+                </span>
+                <span className="text-[11px] text-neutral-500">
+                  Non comparira nel calendario comune
+                </span>
+              </span>
+              <span
+                className={
+                  "relative h-5 w-9 shrink-0 rounded-full transition-colors " +
+                  (isPrivate ? "bg-brand" : "bg-neutral-300")
+                }
+              >
+                <span
+                  className={
+                    "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all " +
+                    (isPrivate ? "left-[18px]" : "left-0.5")
+                  }
+                />
+              </span>
+            </button>
 
             <div>
               <span className="mb-1 block text-xs font-medium text-neutral-600">
