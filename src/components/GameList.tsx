@@ -5,8 +5,9 @@ import { useMemo, useRef, useState } from "react";
 import type { EditorsSnapshot, Item } from "@/types";
 import { useSelections, type Selections } from "@/lib/storage";
 import { useItems } from "@/lib/useItems";
-import { useReservations } from "@/lib/useReservations";
+import { useReservations, type Reservation } from "@/lib/useReservations";
 import { useManualEvents } from "@/lib/useManualEvents";
+import { usePlays, type Play } from "@/lib/usePlays";
 import {
   type CalendarBlock,
   manualToBlock,
@@ -15,6 +16,7 @@ import {
 import GameRow from "@/components/GameRow";
 import AuthBar from "@/components/AuthBar";
 import ReservationModal from "@/components/ReservationModal";
+import PlayedModal from "@/components/PlayedModal";
 import {
   SearchIcon,
   CloseIcon,
@@ -23,6 +25,7 @@ import {
   PlayIcon,
   BuyIcon,
   CalendarIcon,
+  StarIcon,
 } from "@/components/icons";
 
 type EditorGroup = {
@@ -36,7 +39,7 @@ type Section = {
   total: number;
 };
 
-type Filter = "all" | "look" | "play" | "buy";
+type Filter = "all" | "look" | "play" | "buy" | "reserved" | "played";
 
 const MAP_PDF_URL = "/Mappa-Play-2026.pdf";
 
@@ -94,10 +97,14 @@ function filterSections(
   query: string,
   filter: Filter,
   selections: Selections,
+  reservationByItem: Map<number, Reservation>,
+  playByItem: Map<number, Play>,
 ): Section[] {
   const q = normalize(query.trim());
   const passesFilter = (it: Item) => {
     if (filter === "all") return true;
+    if (filter === "reserved") return reservationByItem.has(it.id);
+    if (filter === "played") return playByItem.has(it.id);
     return selections[it.id]?.[filter] === "checked";
   };
   return sections
@@ -186,17 +193,25 @@ export default function GameList() {
   const { selections, cycle, hydrated } = useSelections();
   const reservationsState = useReservations();
   const manualState = useManualEvents();
+  const playsState = usePlays();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [reservingItem, setReservingItem] = useState<Item | null>(null);
+  const [ratingItem, setRatingItem] = useState<Item | null>(null);
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
 
   const reservationByItem = useMemo(() => {
-    const m = new Map<number, (typeof reservationsState.reservations)[number]>();
+    const m = new Map<number, Reservation>();
     for (const r of reservationsState.reservations) m.set(r.itemId, r);
     return m;
   }, [reservationsState.reservations]);
+
+  const playByItem = useMemo(() => {
+    const m = new Map<number, Play>();
+    for (const p of playsState.plays) m.set(p.itemId, p);
+    return m;
+  }, [playsState.plays]);
 
   const itemsById = useMemo(() => {
     const m = new Map<number, Item>();
@@ -227,8 +242,16 @@ export default function GameList() {
     [items, editorsSnap],
   );
   const filteredSections = useMemo(
-    () => filterSections(sections, query, filter, selections),
-    [sections, query, filter, selections],
+    () =>
+      filterSections(
+        sections,
+        query,
+        filter,
+        selections,
+        reservationByItem,
+        playByItem,
+      ),
+    [sections, query, filter, selections, reservationByItem, playByItem],
   );
 
   const totalShown = filteredSections.reduce((n, s) => n + s.total, 0);
@@ -354,6 +377,24 @@ export default function GameList() {
             <BuyIcon className="h-3.5 w-3.5" />
             <span>Comprare</span>
           </FilterChip>
+          {reservationsState.loggedIn && (
+            <>
+              <FilterChip
+                active={filter === "reserved"}
+                onClick={() => setFilter("reserved")}
+              >
+                <CalendarIcon className="h-3.5 w-3.5" />
+                <span>Prenotati</span>
+              </FilterChip>
+              <FilterChip
+                active={filter === "played"}
+                onClick={() => setFilter("played")}
+              >
+                <StarIcon filled className="h-3.5 w-3.5" />
+                <span>Giocati</span>
+              </FilterChip>
+            </>
+          )}
         </div>
 
         {menuOpen && (
@@ -402,9 +443,13 @@ export default function GameList() {
 
         {noResults && (
           <p className="px-3 py-12 text-center text-sm text-neutral-500">
-            {filter !== "all"
-              ? "Nessun titolo selezionato per questo filtro."
-              : "Nessun titolo trovato."}
+            {filter === "reserved"
+              ? "Nessun gioco prenotato."
+              : filter === "played"
+                ? "Nessun gioco giocato."
+                : filter !== "all"
+                  ? "Nessun titolo selezionato per questo filtro."
+                  : "Nessun titolo trovato."}
           </p>
         )}
 
@@ -455,6 +500,9 @@ export default function GameList() {
                         reservation={reservationByItem.get(it.id) ?? null}
                         canReserve={reservationsState.loggedIn}
                         onReserve={(item) => setReservingItem(item)}
+                        play={playByItem.get(it.id) ?? null}
+                        canRate={playsState.loggedIn}
+                        onRate={(item) => setRatingItem(item)}
                       />
                     ))}
                   </ul>
@@ -471,6 +519,13 @@ export default function GameList() {
           existing={reservationByItem.get(reservingItem.id) ?? null}
           allBlocks={allBlocks}
           onClose={() => setReservingItem(null)}
+        />
+      )}
+      {ratingItem && (
+        <PlayedModal
+          item={ratingItem}
+          existing={playByItem.get(ratingItem.id) ?? null}
+          onClose={() => setRatingItem(null)}
         />
       )}
     </>

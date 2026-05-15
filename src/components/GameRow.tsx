@@ -1,8 +1,9 @@
 import type { Item } from "@/types";
 import type { CellState, SelectionFlag } from "@/lib/storage";
 import type { Reservation } from "@/lib/useReservations";
+import type { Play } from "@/lib/usePlays";
 import { formatRangeShort } from "@/lib/eventDays";
-import { CalendarIcon, ForbiddenIcon } from "@/components/icons";
+import { CalendarIcon, ForbiddenIcon, StarIcon } from "@/components/icons";
 
 type CellProps = {
   state: CellState | undefined;
@@ -50,6 +51,9 @@ type GameRowProps = {
   reservation: Reservation | null;
   canReserve: boolean;
   onReserve: (item: Item) => void;
+  play: Play | null;
+  canRate: boolean;
+  onRate: (item: Item) => void;
 };
 
 const BOOKTYPE_LABEL: Record<string, string> = {
@@ -67,6 +71,9 @@ export default function GameRow({
   reservation,
   canReserve,
   onReserve,
+  play,
+  canRate,
+  onRate,
 }: GameRowProps) {
   const stateFor = (flag: SelectionFlag): CellState | undefined =>
     hydrated ? selected[flag] : undefined;
@@ -107,7 +114,30 @@ export default function GameRow({
             {reservation.note ? ` · ${reservation.note}` : ""}
           </span>
         )}
+        {play && (
+          <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600">
+            <StarIcon filled className="h-3 w-3" />
+            {play.rating}/5
+            {play.note ? <span className="text-neutral-500">· {play.note}</span> : null}
+          </span>
+        )}
       </div>
+
+      {canRate && (
+        <button
+          type="button"
+          aria-label={play ? `Modifica voto ${item.name}` : `Vota ${item.name}`}
+          onClick={() => onRate(item)}
+          className={
+            "flex h-7 w-7 items-center justify-center rounded " +
+            (play
+              ? "bg-amber-500 text-white"
+              : "bg-neutral-100 text-neutral-500 active:bg-neutral-200")
+          }
+        >
+          <StarIcon filled={!!play} className="h-4 w-4" />
+        </button>
+      )}
 
       {canReserve && (
         <button
