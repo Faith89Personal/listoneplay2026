@@ -53,10 +53,22 @@ const statements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (email, item_id)
   )`,
+  `CREATE TABLE IF NOT EXISTS manual_plays (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    editor TEXT,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    played_on DATE,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE INDEX IF NOT EXISTS selections_email_idx ON selections (email)`,
   `CREATE INDEX IF NOT EXISTS reservations_email_idx ON reservations (email)`,
   `CREATE INDEX IF NOT EXISTS manual_events_email_idx ON manual_events (email)`,
   `CREATE INDEX IF NOT EXISTS plays_email_idx ON plays (email)`,
+  `CREATE INDEX IF NOT EXISTS manual_plays_email_idx ON manual_plays (email)`,
 ];
 
 for (const stmt of statements) {

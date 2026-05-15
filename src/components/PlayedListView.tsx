@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useItems } from "@/lib/useItems";
 import { usePlays } from "@/lib/usePlays";
+import { useManualPlays, type ManualPlay } from "@/lib/useManualPlays";
 import { useSession } from "@/lib/useSession";
 import PlayedModal from "@/components/PlayedModal";
+import ManualPlayedModal from "@/components/ManualPlayedModal";
 import { StarIcon } from "@/components/icons";
 import type { Item } from "@/types";
 
@@ -25,11 +27,42 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
+type CatalogRow = {
+  kind: "catalog";
+  key: string;
+  rating: number;
+  name: string;
+  editor: string;
+  note: string | null;
+  item: Item;
+};
+type ManualRow = {
+  kind: "manual";
+  key: string;
+  rating: number;
+  name: string;
+  editor: string;
+  note: string | null;
+  playedOn: string | null;
+  manual: ManualPlay;
+};
+type Row = CatalogRow | ManualRow;
+
+function formatDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
 export default function PlayedListView() {
   const session = useSession();
   const { data } = useItems();
   const playsState = usePlays();
+  const manualState = useManualPlays();
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editingManual, setEditingManual] = useState<ManualPlay | null>(null);
+  const [creatingManual, setCreatingManual] = useState(false);
 
   const itemsById = useMemo(() => {
     const m = new Map<number, Item>();
@@ -37,16 +70,39 @@ export default function PlayedListView() {
     return m;
   }, [data]);
 
-  const rows = useMemo(() => {
-    return playsState.plays
-      .map((p) => ({ play: p, item: itemsById.get(p.itemId) ?? null }))
-      .sort((a, b) => {
-        if (a.play.rating !== b.play.rating) return b.play.rating - a.play.rating;
-        const an = a.item?.name ?? "";
-        const bn = b.item?.name ?? "";
-        return an.localeCompare(bn, "it");
-      });
-  }, [playsState.plays, itemsById]);
+  const rows: Row[] = useMemo(() => {
+    const catalog: CatalogRow[] = playsState.plays
+      .map((p) => {
+        const item = itemsById.get(p.itemId);
+        if (!item) return null;
+        return {
+          kind: "catalog" as const,
+          key: `c:${p.itemId}`,
+          rating: p.rating,
+          name: item.name,
+          editor: item.editor.name,
+          note: p.note,
+          item,
+        };
+      })
+      .filter((r): r is CatalogRow => r !== null);
+
+    const manual: ManualRow[] = manualState.plays.map((p) => ({
+      kind: "manual" as const,
+      key: `m:${p.id}`,
+      rating: p.rating,
+      name: p.name,
+      editor: p.editor ?? "",
+      note: p.note,
+      playedOn: p.playedOn,
+      manual: p,
+    }));
+
+    return [...catalog, ...manual].sort((a, b) => {
+      if (a.rating !== b.rating) return b.rating - a.rating;
+      return a.name.localeCompare(b.name, "it");
+    });
+  }, [playsState.plays, manualState.plays, itemsById]);
 
   if (session.loading) {
     return (
@@ -63,7 +119,7 @@ export default function PlayedListView() {
         </p>
         <Link
           href="/"
-          className="mt-3 inline-block rounded bg-brand px-4 py-2 text-sm font-medium text-white shadow"
+          className="mt-3 inline-block rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white shadow"
         >
           Torna alla lista
         </Link>
@@ -98,6 +154,14 @@ export default function PlayedListView() {
               Giocati e votati
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => setCreatingManual(true)}
+            className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-brand-dark shadow-sm active:bg-white/90"
+          >
+            <StarIcon filled className="h-4 w-4 text-amber-500" />
+            <span>Aggiungi</span>
+          </button>
         </div>
       </header>
 
@@ -105,42 +169,68 @@ export default function PlayedListView() {
         {rows.length === 0 && (
           <p className="px-3 py-10 text-center text-sm text-neutral-600">
             Nessun gioco giocato. Apri la lista e premi l&apos;icona stella
-            sul gioco a cui hai giocato per dargli un voto.
+            sul gioco, oppure usa &laquo;Aggiungi&raquo; per inserire un gioco
+            fuori dal listone.
           </p>
         )}
 
         {rows.length > 0 && (
-          <ul className="divide-y divide-neutral-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100">
-            {rows.map(({ play, item }) => (
-              <li key={play.itemId}>
-                <button
-                  type="button"
-                  onClick={() => item && setEditingItem(item)}
-                  disabled={!item}
-                  className="flex w-full flex-col gap-1.5 px-4 py-3 text-left text-sm active:bg-neutral-50 disabled:opacity-60"
-                >
-                  <div className="flex items-center gap-2">
-                    <Stars rating={play.rating} />
-                    <span className="text-xs font-bold text-amber-600">
-                      {play.rating}/5
-                    </span>
-                  </div>
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-semibold text-neutral-900">
-                      {item?.name ?? `#${play.itemId}`}
-                    </span>
-                    <span className="text-xs text-neutral-500">
-                      {item?.editor.name ?? ""}
-                    </span>
-                    {play.note && (
-                      <span className="mt-0.5 text-xs italic text-neutral-600">
-                        {play.note}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              </li>
-            ))}
+          <ul className="space-y-2">
+            {rows.map((r) => {
+              const date = r.kind === "manual" ? formatDate(r.playedOn) : null;
+              const isManual = r.kind === "manual";
+              return (
+                <li key={r.key}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (r.kind === "catalog") setEditingItem(r.item);
+                      else setEditingManual(r.manual);
+                    }}
+                    className={
+                      "w-full rounded-2xl text-left shadow-sm ring-1 active:bg-neutral-50 " +
+                      (isManual
+                        ? "bg-white ring-indigo-200"
+                        : "bg-white ring-neutral-200")
+                    }
+                  >
+                    <div className="flex flex-col gap-1.5 px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Stars rating={r.rating} />
+                        <span className="text-xs font-bold text-amber-600">
+                          {r.rating}/5
+                        </span>
+                        {isManual && (
+                          <span className="ml-auto rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
+                            Manuale
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-sm font-semibold text-neutral-900">
+                          {r.name}
+                        </span>
+                        {r.editor && (
+                          <span className="text-xs text-neutral-500">
+                            {r.editor}
+                          </span>
+                        )}
+                        {date && (
+                          <span className="text-xs text-neutral-500">
+                            {date}
+                          </span>
+                        )}
+                        {r.note && (
+                          <span className="mt-0.5 text-xs italic text-neutral-600">
+                            {r.note}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>
@@ -152,6 +242,18 @@ export default function PlayedListView() {
             playsState.plays.find((p) => p.itemId === editingItem.id) ?? null
           }
           onClose={() => setEditingItem(null)}
+        />
+      )}
+      {editingManual && (
+        <ManualPlayedModal
+          existing={editingManual}
+          onClose={() => setEditingManual(null)}
+        />
+      )}
+      {creatingManual && (
+        <ManualPlayedModal
+          existing={null}
+          onClose={() => setCreatingManual(false)}
         />
       )}
     </>
