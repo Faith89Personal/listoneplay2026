@@ -26,12 +26,21 @@ export async function POST(req: Request) {
     const sql = requireSql();
     await sql`INSERT INTO users (email) VALUES (${email}) ON CONFLICT (email) DO NOTHING`;
   } catch (err) {
+    console.error("[auth/login] db error:", err);
     return NextResponse.json(
       { error: "db_unavailable", detail: (err as Error).message },
       { status: 500 },
     );
   }
 
-  await setSessionCookie(email);
+  try {
+    await setSessionCookie(email);
+  } catch (err) {
+    console.error("[auth/login] session error:", err);
+    return NextResponse.json(
+      { error: "session_error", detail: (err as Error).message },
+      { status: 500 },
+    );
+  }
   return NextResponse.json({ email });
 }

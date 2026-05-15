@@ -51,8 +51,12 @@ export function useSession() {
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
+        detail?: string;
       };
-      throw new Error(data.error || "login_failed");
+      const code = data.error || `http_${res.status}`;
+      const err = new Error(code);
+      (err as Error & { detail?: string }).detail = data.detail;
+      throw err;
     }
     const data = (await res.json()) as { email: string };
     setShared({ email: data.email, loading: false });

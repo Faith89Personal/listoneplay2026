@@ -82,9 +82,15 @@ export default function AuthBar() {
       {error && (
         <span
           role="alert"
-          className="absolute right-3 top-full mt-1 rounded bg-red-600 px-2 py-0.5 text-[10px] text-white shadow"
+          className="absolute right-3 top-full mt-1 max-w-[90%] rounded bg-red-600 px-2 py-0.5 text-[10px] text-white shadow"
         >
-          {error === "invalid_email" ? "Email non valida" : "Errore login"}
+          {error === "invalid_email"
+            ? "Email non valida"
+            : error === "db_unavailable"
+              ? "DB non raggiungibile"
+              : error === "session_error"
+                ? "SESSION_SECRET mancante su Vercel"
+                : `Errore: ${error}`}
         </span>
       )}
     </form>
