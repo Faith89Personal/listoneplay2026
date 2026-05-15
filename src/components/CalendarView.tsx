@@ -330,6 +330,11 @@ export default function CalendarView() {
             ) ?? null
           }
           allBlocks={blocks}
+          stand={(() => {
+            const ed = (data?.editors.editors ?? {})[editingReservation.editor.name];
+            return ed?.stands?.join("·") ?? null;
+          })()}
+          editorName={editingReservation.editor.name || null}
           onClose={() => setEditingReservation(null)}
         />
       )}

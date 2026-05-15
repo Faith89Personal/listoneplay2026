@@ -598,6 +598,11 @@ export default function GameList() {
           item={reservingItem}
           existing={reservationByItem.get(reservingItem.id) ?? null}
           allBlocks={allBlocks}
+          stand={(() => {
+            const ed = editorsSnap.editors[reservingItem.editor.name];
+            return ed?.stands?.join("·") ?? null;
+          })()}
+          editorName={reservingItem.editor.name || null}
           onClose={() => setReservingItem(null)}
         />
       )}

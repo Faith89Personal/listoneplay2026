@@ -16,7 +16,14 @@ type JoinReservation = {
   maxSeats: number | null;
   occupied: number;
   isFull: boolean;
+  ownerEmail: string | null;
+  sharedWith: string[];
 };
+
+function emailToName(email: string): string {
+  const at = email.indexOf("@");
+  return at > 0 ? email.slice(0, at) : email;
+}
 
 type Viewer = {
   loggedIn: boolean;
@@ -182,6 +189,31 @@ export default function JoinReservationView({ token }: { token: string }) {
                 <p className="mt-2 text-sm font-semibold text-amber-700">
                   👥 {data.reservation.occupied}/{data.reservation.maxSeats}{" "}
                   posti occupati
+                </p>
+              )}
+              {(data.reservation.ownerEmail ||
+                data.reservation.sharedWith.length > 0) && (
+                <p className="mt-1 text-xs text-neutral-600">
+                  {data.reservation.ownerEmail && (
+                    <>
+                      Proprietario:{" "}
+                      <span className="font-medium">
+                        {emailToName(data.reservation.ownerEmail)}
+                      </span>
+                    </>
+                  )}
+                  {data.reservation.ownerEmail &&
+                  data.reservation.sharedWith.length > 0
+                    ? " · "
+                    : ""}
+                  {data.reservation.sharedWith.length > 0 && (
+                    <>
+                      Insieme a:{" "}
+                      {data.reservation.sharedWith
+                        .map(emailToName)
+                        .join(", ")}
+                    </>
+                  )}
                 </p>
               )}
             </div>

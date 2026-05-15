@@ -74,6 +74,7 @@ export async function GET(
     const isFull =
       typeof r.max_seats === "number" && occupied >= r.max_seats;
     const info = lookupItem(r.item_id);
+    const exposeEmails = isOwner || isJoined;
     return NextResponse.json({
       reservation: {
         itemId: r.item_id,
@@ -86,6 +87,8 @@ export async function GET(
         maxSeats: r.max_seats,
         occupied,
         isFull,
+        ownerEmail: exposeEmails ? r.email : null,
+        sharedWith: exposeEmails ? sharedWith : [],
       },
       viewer: {
         loggedIn: !!session?.email,

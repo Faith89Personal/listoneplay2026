@@ -34,13 +34,22 @@ type Props = {
   item: Item;
   existing: Reservation | null;
   allBlocks: CalendarBlock[];
+  stand: string | null;
+  editorName: string | null;
   onClose: () => void;
 };
+
+function emailToName(email: string): string {
+  const at = email.indexOf("@");
+  return at > 0 ? email.slice(0, at) : email;
+}
 
 export default function ReservationModal({
   item,
   existing,
   allBlocks,
+  stand,
+  editorName,
   onClose,
 }: Props) {
   const { save, remove } = useReservations();
@@ -126,6 +135,129 @@ export default function ReservationModal({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleLeaveShared() {
+    if (!existing?.shareToken) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/reservations/r/${existing.shareToken}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error || `http_${res.status}`);
+      }
+      // Page state will refresh via the parent hook on next call; just close.
+      onClose();
+      // Trigger a manual reload of the shared list by reloading the page is too heavy.
+      // Caller of this modal already passes a stale reservation; the next reload of
+      // useReservations will drop it. For now, request a hard refresh through location.
+      if (typeof window !== "undefined") window.location.reload();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isShared = !!existing && !existing.isOwner;
+
+  if (isShared) {
+    const ownerName = existing?.ownerEmail ? emailToName(existing.ownerEmail) : "qualcuno";
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+        onClick={onClose}
+      >
+        <div
+          className="w-full max-w-md rounded-t-xl bg-white p-4 shadow-xl sm:rounded-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-3 flex items-start gap-2">
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-sky-700">
+                Prenotazione condivisa
+              </h2>
+              <p className="line-clamp-2 text-sm text-neutral-700">{item.name}</p>
+              <p className="text-xs text-neutral-500">
+                Da <span className="font-semibold">{ownerName}</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Chiudi"
+              onClick={onClose}
+              className="rounded p-1 text-neutral-500 active:bg-neutral-100"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="space-y-2 text-sm text-neutral-800">
+            <p>
+              📅{" "}
+              {(EVENT_DAYS.find(
+                (d) => d.date === utcIsoToRomeParts(existing.reservedAt).date,
+              )?.long ?? "")}{" "}
+              ·{" "}
+              {formatRangeShort(existing.reservedAt, existing.durationMinutes)}
+            </p>
+            {(editorName || stand) && (
+              <p>
+                {editorName && <span>🏢 {editorName}</span>}
+                {editorName && stand ? " · " : ""}
+                {stand && <span>📍 {stand}</span>}
+              </p>
+            )}
+            {existing.maxSeats !== null && (
+              <p className="text-amber-700">
+                👥 {1 + existing.sharedWith.length}/{existing.maxSeats} posti occupati
+              </p>
+            )}
+            {existing.sharedWith.length > 0 && (
+              <p className="text-xs text-neutral-600">
+                Insieme a te: {existing.sharedWith
+                  .filter((e) => e !== existing.ownerEmail)
+                  .map(emailToName)
+                  .join(", ")}
+              </p>
+            )}
+            {existing.note && (
+              <p className="rounded-md bg-neutral-50 p-2 text-xs italic text-neutral-700">
+                &laquo;{existing.note}&raquo;
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <p className="mt-3 rounded bg-red-50 px-2 py-1 text-xs text-red-700">
+              Errore: {error}
+            </p>
+          )}
+
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={handleLeaveShared}
+              className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 active:bg-red-50 disabled:opacity-50"
+            >
+              {busy ? "…" : "Rimuovi dal mio calendario"}
+            </button>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-white"
+            >
+              Chiudi
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -284,9 +416,18 @@ export default function ReservationModal({
                       existing.maxSeats
                         ? `\n👥 ${occupied}/${existing.maxSeats} posti occupati`
                         : "";
+                    const editorPart = editorName ? `🏢 ${editorName}` : "";
+                    const standPart = stand ? `📍 ${stand}` : "";
+                    const editorLine =
+                      editorPart && standPart
+                        ? `\n${editorPart} · ${standPart}`
+                        : editorPart || standPart
+                          ? `\n${editorPart}${standPart}`
+                          : "";
                     const text =
-                      `🎲 Sto prenotando: ${item.name}\n` +
-                      `📅 ${dayLabel} ${range}` +
+                      `🎲 Sto prenotando: ${item.name}` +
+                      editorLine +
+                      `\n📅 ${dayLabel} ${range}` +
                       seatsLine +
                       `\n\nUnisciti 👉 ${url}`;
                     if (typeof navigator !== "undefined" && navigator.share) {
@@ -317,6 +458,17 @@ export default function ReservationModal({
                 </svg>
                 {shareBusy ? "…" : "Condividi su WhatsApp"}
               </button>
+            )}
+
+            {existing && existing.isOwner && existing.sharedWith.length > 0 && (
+              <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
+                <span className="font-semibold">
+                  {existing.sharedWith.length} amic
+                  {existing.sharedWith.length === 1 ? "o" : "i"} unit
+                  {existing.sharedWith.length === 1 ? "o" : "i"}:
+                </span>{" "}
+                {existing.sharedWith.map(emailToName).join(", ")}
+              </p>
             )}
 
             {error && (
