@@ -304,13 +304,22 @@ export default function GameList() {
             </span>
           </div>
           {reservationsState.loggedIn && (
-            <Link
-              href="/prenotazioni"
-              aria-label="Le mie prenotazioni"
-              className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
-            >
-              <CalendarIcon className="h-4 w-4" />
-            </Link>
+            <>
+              <Link
+                href="/giocati"
+                aria-label="Giocati e votati"
+                className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
+              >
+                <StarIcon filled className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/prenotazioni"
+                aria-label="Le mie prenotazioni"
+                className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </Link>
+            </>
           )}
           <a
             href={MAP_PDF_URL}
