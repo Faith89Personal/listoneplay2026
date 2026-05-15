@@ -1,0 +1,4 @@
+{
+  "_comment": "Map an API game name (exact match) to a BGG game ID for direct links. Without an alias the BGG button opens the BGG search results page for that name. Find an ID by going to https://boardgamegeek.com/search/boardgame?q=NAME and copying the number after /boardgame/ in the URL of the right game.",
+  "_example_Carcassonne": 822
+}
