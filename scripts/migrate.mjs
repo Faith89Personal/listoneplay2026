@@ -25,12 +25,14 @@ const statements = [
   `CREATE TABLE IF NOT EXISTS reservations (
     email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
     item_id INTEGER NOT NULL,
-    reserved_at TIMESTAMPTZ,
+    reserved_at TIMESTAMPTZ NOT NULL,
+    duration_minutes INTEGER NOT NULL DEFAULT 60,
     note TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (email, item_id)
   )`,
+  `ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duration_minutes INTEGER NOT NULL DEFAULT 60`,
   `CREATE INDEX IF NOT EXISTS selections_email_idx ON selections (email)`,
   `CREATE INDEX IF NOT EXISTS reservations_email_idx ON reservations (email)`,
 ];

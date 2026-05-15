@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 
 type ReservationRow = {
   item_id: number;
-  reserved_at: string | null;
+  reserved_at: string;
+  duration_minutes: number;
   note: string | null;
 };
 
@@ -19,12 +20,15 @@ export async function GET() {
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT item_id, reserved_at, note FROM reservations WHERE email = ${session.email}
+      SELECT item_id, reserved_at, duration_minutes, note
+      FROM reservations WHERE email = ${session.email}
+      ORDER BY reserved_at ASC
     `) as ReservationRow[];
     return NextResponse.json({
       reservations: rows.map((r) => ({
         itemId: r.item_id,
         reservedAt: r.reserved_at,
+        durationMinutes: r.duration_minutes,
         note: r.note,
       })),
     });
@@ -39,6 +43,7 @@ export async function GET() {
 type UpsertBody = {
   itemId?: unknown;
   reservedAt?: unknown;
+  durationMinutes?: unknown;
   note?: unknown;
 };
 
@@ -57,19 +62,33 @@ export async function POST(req: Request) {
   if (itemId === null) {
     return NextResponse.json({ error: "invalid_item_id" }, { status: 400 });
   }
-  const reservedAt =
-    typeof body.reservedAt === "string" && body.reservedAt.length > 0
-      ? body.reservedAt
-      : null;
+  if (typeof body.reservedAt !== "string" || body.reservedAt.length === 0) {
+    return NextResponse.json({ error: "invalid_reserved_at" }, { status: 400 });
+  }
+  const parsed = new Date(body.reservedAt);
+  if (isNaN(parsed.getTime())) {
+    return NextResponse.json({ error: "invalid_reserved_at" }, { status: 400 });
+  }
+  const duration =
+    typeof body.durationMinutes === "number" &&
+    body.durationMinutes >= 5 &&
+    body.durationMinutes <= 720
+      ? Math.round(body.durationMinutes)
+      : 60;
   const note =
-    typeof body.note === "string" && body.note.length > 0 ? body.note : null;
+    typeof body.note === "string" && body.note.length > 0
+      ? body.note.slice(0, 500)
+      : null;
   try {
     const sql = requireSql();
     await sql`
-      INSERT INTO reservations (email, item_id, reserved_at, note, updated_at)
-      VALUES (${session.email}, ${itemId}, ${reservedAt}, ${note}, NOW())
+      INSERT INTO reservations (email, item_id, reserved_at, duration_minutes, note, updated_at)
+      VALUES (${session.email}, ${itemId}, ${parsed.toISOString()}, ${duration}, ${note}, NOW())
       ON CONFLICT (email, item_id)
-      DO UPDATE SET reserved_at = EXCLUDED.reserved_at, note = EXCLUDED.note, updated_at = NOW()
+      DO UPDATE SET reserved_at = EXCLUDED.reserved_at,
+                    duration_minutes = EXCLUDED.duration_minutes,
+                    note = EXCLUDED.note,
+                    updated_at = NOW()
     `;
     return NextResponse.json({ ok: true });
   } catch (err) {

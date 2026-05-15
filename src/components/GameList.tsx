@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import type { EditorsSnapshot, Item } from "@/types";
 import { useSelections, type Selections } from "@/lib/storage";
 import { useItems } from "@/lib/useItems";
+import { useReservations } from "@/lib/useReservations";
 import GameRow from "@/components/GameRow";
 import AuthBar from "@/components/AuthBar";
+import ReservationModal from "@/components/ReservationModal";
 import {
   SearchIcon,
   CloseIcon,
@@ -13,6 +16,7 @@ import {
   LookIcon,
   PlayIcon,
   BuyIcon,
+  CalendarIcon,
 } from "@/components/icons";
 
 type EditorGroup = {
@@ -174,10 +178,18 @@ function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function GameList() {
   const { data, loading, error, stale, refresh } = useItems();
   const { selections, cycle, hydrated } = useSelections();
+  const reservationsState = useReservations();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [reservingItem, setReservingItem] = useState<Item | null>(null);
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
+
+  const reservationByItem = useMemo(() => {
+    const m = new Map<number, (typeof reservationsState.reservations)[number]>();
+    for (const r of reservationsState.reservations) m.set(r.itemId, r);
+    return m;
+  }, [reservationsState.reservations]);
 
   const items = data?.items ?? [];
   const editorsSnap: EditorsSnapshot = data?.editors ?? {
@@ -244,6 +256,15 @@ export default function GameList() {
               {stale ? " · cache" : ""}
             </span>
           </div>
+          {reservationsState.loggedIn && (
+            <Link
+              href="/prenotazioni"
+              aria-label="Le mie prenotazioni"
+              className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
+            >
+              <CalendarIcon className="h-4 w-4" />
+            </Link>
+          )}
           <a
             href={MAP_PDF_URL}
             target="_blank"
@@ -252,7 +273,6 @@ export default function GameList() {
             className="flex items-center gap-1 rounded bg-white/15 px-2 py-1 text-xs font-medium active:bg-white/25"
           >
             <MapPinIcon className="h-4 w-4" />
-            <span className="hidden xs:inline">Mappa</span>
           </a>
         </div>
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 pb-2">
@@ -408,6 +428,9 @@ export default function GameList() {
                         selected={selections[it.id] ?? {}}
                         hydrated={hydrated}
                         onCycle={cycle}
+                        reservation={reservationByItem.get(it.id) ?? null}
+                        canReserve={reservationsState.loggedIn}
+                        onReserve={(item) => setReservingItem(item)}
                       />
                     ))}
                   </ul>
@@ -417,6 +440,15 @@ export default function GameList() {
           </section>
         ))}
       </main>
+
+      {reservingItem && (
+        <ReservationModal
+          item={reservingItem}
+          existing={reservationByItem.get(reservingItem.id) ?? null}
+          reservations={reservationsState.reservations}
+          onClose={() => setReservingItem(null)}
+        />
+      )}
     </>
   );
 }

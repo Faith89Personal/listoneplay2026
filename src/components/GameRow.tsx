@@ -1,6 +1,8 @@
 import type { Item } from "@/types";
 import type { CellState, SelectionFlag } from "@/lib/storage";
-import { ForbiddenIcon } from "@/components/icons";
+import type { Reservation } from "@/lib/useReservations";
+import { formatRangeShort } from "@/lib/eventDays";
+import { CalendarIcon, ForbiddenIcon } from "@/components/icons";
 
 type CellProps = {
   state: CellState | undefined;
@@ -45,6 +47,9 @@ type GameRowProps = {
   selected: Partial<Record<SelectionFlag, CellState>>;
   hydrated: boolean;
   onCycle: (itemId: number, flag: SelectionFlag) => void;
+  reservation: Reservation | null;
+  canReserve: boolean;
+  onReserve: (item: Item) => void;
 };
 
 const BOOKTYPE_LABEL: Record<string, string> = {
@@ -59,6 +64,9 @@ export default function GameRow({
   selected,
   hydrated,
   onCycle,
+  reservation,
+  canReserve,
+  onReserve,
 }: GameRowProps) {
   const stateFor = (flag: SelectionFlag): CellState | undefined =>
     hydrated ? selected[flag] : undefined;
@@ -87,13 +95,37 @@ export default function GameRow({
           {item.bookType && (
             <span
               title={BOOKTYPE_LABEL[item.bookType] ?? item.bookType}
-              className="ml-1.5 inline-block rounded bg-brand-soft px-1 text-[10px] font-bold leading-snug align-middle"
+              className="ml-1.5 inline-block rounded bg-brand-soft px-1 align-middle text-[10px] font-bold leading-snug"
             >
               {item.bookType}
             </span>
           )}
         </span>
+        {reservation && (
+          <span className="text-[10px] font-medium text-brand-dark">
+            📅 {formatRangeShort(reservation.reservedAt, reservation.durationMinutes)}
+            {reservation.note ? ` · ${reservation.note}` : ""}
+          </span>
+        )}
       </div>
+
+      {canReserve && (
+        <button
+          type="button"
+          aria-label={
+            reservation ? `Modifica prenotazione ${item.name}` : `Prenota ${item.name}`
+          }
+          onClick={() => onReserve(item)}
+          className={
+            "flex h-7 w-7 items-center justify-center rounded " +
+            (reservation
+              ? "bg-brand-dark text-white"
+              : "bg-neutral-100 text-neutral-600 active:bg-neutral-200")
+          }
+        >
+          <CalendarIcon className="h-4 w-4" />
+        </button>
+      )}
     </li>
   );
 }
