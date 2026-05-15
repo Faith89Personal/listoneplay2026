@@ -28,11 +28,14 @@ type DayBlock = {
   startTime: string;
   endTime: string;
   overlapping: boolean;
+  editorName: string | null;
+  stands: string[];
 };
 
 function buildDayBlocks(
   reservations: Reservation[],
   itemsById: Map<number, Item>,
+  editorStands: Record<string, { stands: string[] }>,
 ): Map<string, DayBlock[]> {
   const blocks = new Map<string, DayBlock[]>();
   for (const eventDay of EVENT_DAYS) blocks.set(eventDay.date, []);
@@ -46,14 +49,19 @@ function buildDayBlocks(
     const endMs =
       new Date(r.reservedAt).getTime() + r.durationMinutes * 60_000;
     const endParts = utcIsoToRomeParts(new Date(endMs).toISOString());
+    const item = itemsById.get(r.itemId) ?? null;
+    const editorName = item?.editor.name ?? null;
+    const stands = editorName ? (editorStands[editorName]?.stands ?? []) : [];
     list.push({
       reservation: r,
-      item: itemsById.get(r.itemId) ?? null,
+      item,
       topPx,
       heightPx,
       startTime: p.time,
       endTime: endParts.time,
       overlapping: false,
+      editorName,
+      stands,
     });
   }
   for (const list of blocks.values()) {
@@ -87,8 +95,13 @@ export default function CalendarView() {
   }, [data]);
 
   const blocksByDay = useMemo(
-    () => buildDayBlocks(reservationsState.reservations, itemsById),
-    [reservationsState.reservations, itemsById],
+    () =>
+      buildDayBlocks(
+        reservationsState.reservations,
+        itemsById,
+        data?.editors.editors ?? {},
+      ),
+    [reservationsState.reservations, itemsById, data?.editors.editors],
   );
 
   if (session.loading || reservationsState.sessionLoading) {
@@ -177,35 +190,48 @@ export default function CalendarView() {
                       />
                     ),
                   )}
-                  {list.map((b) => (
-                    <button
-                      key={`${b.reservation.itemId}-${b.reservation.reservedAt}`}
-                      type="button"
-                      onClick={() => b.item && setEditing(b.item)}
-                      style={{
-                        top: b.topPx,
-                        height: Math.max(20, b.heightPx),
-                      }}
-                      className={
-                        "absolute inset-x-0 mx-0.5 rounded px-1.5 py-0.5 text-left text-[10px] leading-tight shadow-sm " +
-                        (b.overlapping
-                          ? "bg-amber-200 ring-1 ring-amber-500"
-                          : "bg-brand text-white")
-                      }
-                    >
-                      <div className="font-semibold">
-                        {b.startTime}–{b.endTime}
-                      </div>
-                      <div className="truncate">
-                        {b.item?.name ?? `#${b.reservation.itemId}`}
-                      </div>
-                      {b.reservation.note && (
-                        <div className="truncate opacity-80">
-                          {b.reservation.note}
+                  {list.map((b) => {
+                    const isTall = b.heightPx >= 60;
+                    return (
+                      <button
+                        key={`${b.reservation.itemId}-${b.reservation.reservedAt}`}
+                        type="button"
+                        onClick={() => b.item && setEditing(b.item)}
+                        style={{
+                          top: b.topPx,
+                          height: Math.max(20, b.heightPx),
+                        }}
+                        className={
+                          "absolute inset-x-0 mx-0.5 overflow-hidden rounded px-1.5 py-0.5 text-left text-[10px] leading-tight shadow-sm " +
+                          (b.overlapping
+                            ? "bg-amber-200 ring-1 ring-amber-500"
+                            : "bg-brand text-white")
+                        }
+                      >
+                        <div className="font-semibold">
+                          {b.startTime}–{b.endTime}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        <div className="truncate font-medium">
+                          {b.item?.name ?? `#${b.reservation.itemId}`}
+                        </div>
+                        {b.editorName && (
+                          <div className="flex items-baseline gap-1 truncate text-[9px] opacity-90">
+                            <span className="truncate">{b.editorName}</span>
+                            {b.stands.length > 0 && (
+                              <span className="shrink-0 font-bold">
+                                · {b.stands.join("·")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {isTall && b.reservation.note && (
+                          <div className="truncate text-[9px] italic opacity-80">
+                            {b.reservation.note}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
