@@ -5,6 +5,7 @@ import type { EditorsSnapshot, Item } from "@/types";
 import { useSelections, type Selections } from "@/lib/storage";
 import { useItems } from "@/lib/useItems";
 import GameRow from "@/components/GameRow";
+import AuthBar from "@/components/AuthBar";
 import {
   SearchIcon,
   CloseIcon,
@@ -280,6 +281,7 @@ export default function GameList() {
             )}
           </div>
         </div>
+        <AuthBar />
         <div className="mx-auto flex max-w-2xl items-center gap-1.5 overflow-x-auto px-3 pb-2">
           <FilterChip
             active={filter === "all"}

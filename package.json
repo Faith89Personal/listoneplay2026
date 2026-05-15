@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "refresh-data": "node scripts/refresh-data.mjs"
+    "refresh-data": "node scripts/refresh-data.mjs",
+    "migrate": "node --env-file=.env.local scripts/migrate.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "jose": "^6.2.3",
     "next": "15.5.18",
     "react": "19.0.0",
     "react-dom": "19.0.0"
