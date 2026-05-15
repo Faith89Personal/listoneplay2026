@@ -96,6 +96,15 @@ const statements = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (email, item_id, rush_day)
   )`,
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE INDEX IF NOT EXISTS selections_email_idx ON selections (email)`,
   `CREATE INDEX IF NOT EXISTS reservations_email_idx ON reservations (email)`,
   `CREATE INDEX IF NOT EXISTS manual_events_email_idx ON manual_events (email)`,
@@ -103,6 +112,7 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS manual_plays_email_idx ON manual_plays (email)`,
   `CREATE INDEX IF NOT EXISTS manual_items_email_idx ON manual_items (email)`,
   `CREATE INDEX IF NOT EXISTS rushes_email_day_idx ON rushes (email, rush_day)`,
+  `CREATE INDEX IF NOT EXISTS push_subscriptions_email_idx ON push_subscriptions (email)`,
 ];
 
 for (const stmt of statements) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSql } from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/session";
+import { sendPushToUser } from "@/lib/push";
 import itemsSnapshot from "@/data/items.json";
 import editorsSnapshot from "@/data/editors.json";
 import editorAliases from "@/data/bgg-aliases.json";
@@ -123,10 +124,11 @@ export async function POST(
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT email, max_seats, shared_with, guests
+      SELECT email, item_id, max_seats, shared_with, guests
       FROM reservations WHERE share_token = ${token} LIMIT 1
     `) as {
       email: string;
+      item_id: number;
       max_seats: number | null;
       shared_with: string[] | null;
       guests: string[] | null;
@@ -157,6 +159,23 @@ export async function POST(
           updated_at = NOW()
       WHERE share_token = ${token}
     `;
+
+    try {
+      const joinerRows = (await sql`
+        SELECT name FROM users WHERE email = ${session.email} LIMIT 1
+      `) as { name: string | null }[];
+      const joinerName =
+        joinerRows[0]?.name || session.email.split("@")[0] || session.email;
+      const itemInfo = lookupItem(row.item_id);
+      await sendPushToUser(row.email, {
+        title: "Si è unito un amico",
+        body: `${joinerName} si è unito a ${itemInfo.name}`,
+        url: "/prenotazioni",
+      });
+    } catch (err) {
+      console.warn("[reservations/join] push failed:", (err as Error).message);
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(

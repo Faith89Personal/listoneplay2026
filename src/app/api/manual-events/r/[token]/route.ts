@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSql } from "@/lib/db";
 import { getSessionFromCookies } from "@/lib/session";
+import { sendPushToUser } from "@/lib/push";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,10 +96,11 @@ export async function POST(
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT email, max_seats, shared_with, guests
+      SELECT email, name, max_seats, shared_with, guests
       FROM manual_events WHERE share_token = ${token} LIMIT 1
     `) as {
       email: string;
+      name: string;
       max_seats: number | null;
       shared_with: string[] | null;
       guests: string[] | null;
@@ -126,6 +128,22 @@ export async function POST(
           updated_at = NOW()
       WHERE share_token = ${token}
     `;
+
+    try {
+      const joinerRows = (await sql`
+        SELECT name FROM users WHERE email = ${session.email} LIMIT 1
+      `) as { name: string | null }[];
+      const joinerName =
+        joinerRows[0]?.name || session.email.split("@")[0] || session.email;
+      await sendPushToUser(row.email, {
+        title: "Si è unito un amico",
+        body: `${joinerName} si è unito a ${row.name}`,
+        url: "/prenotazioni",
+      });
+    } catch (err) {
+      console.warn("[manual-events/join] push failed:", (err as Error).message);
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(
