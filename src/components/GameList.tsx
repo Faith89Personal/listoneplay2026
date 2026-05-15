@@ -126,7 +126,7 @@ function filterSections(
 
 function ColumnHeader() {
   return (
-    <div className="flex items-center gap-2 border-b border-neutral-100 px-3 py-1.5 text-neutral-400">
+    <div className="flex items-center gap-2 bg-neutral-50 px-3 py-1.5 text-neutral-400">
       <div className="flex h-6 w-7 items-center justify-center">
         <LookIcon className="h-4 w-4" />
       </div>
@@ -458,16 +458,16 @@ export default function GameList() {
               {s.editorGroups.map((g) => (
                 <article
                   key={g.editorName}
-                  className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100"
+                  className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-neutral-200"
                 >
-                  <header className="flex items-stretch gap-3 bg-brand-tint pr-3">
-                    <div className="w-1 shrink-0 bg-brand" aria-hidden />
+                  <header className="flex items-stretch gap-3 border-b border-neutral-200 bg-brand-tint pr-3">
+                    <div className="w-1.5 shrink-0 bg-brand" aria-hidden />
                     <div className="flex flex-1 items-center gap-2 py-2.5">
                       <h3 className="flex-1 text-[15px] font-bold tracking-tight text-neutral-900">
                         {g.editorName}
                       </h3>
                       {g.stands.length > 0 && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
                           <MapPinIcon className="h-3 w-3" />
                           {g.stands.join("·")}
                         </span>

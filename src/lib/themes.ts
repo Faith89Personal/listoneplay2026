@@ -11,7 +11,7 @@ export type ThemeId =
   | "slate";
 
 export const THEMES: Array<{ id: ThemeId; label: string; swatch: string }> = [
-  { id: "green", label: "Verde", swatch: "#5ca040" },
+  { id: "green", label: "Verde", swatch: "#15803d" },
   { id: "teal", label: "Teal", swatch: "#14b8a6" },
   { id: "blue", label: "Blu", swatch: "#3b82f6" },
   { id: "indigo", label: "Indigo", swatch: "#6366f1" },
