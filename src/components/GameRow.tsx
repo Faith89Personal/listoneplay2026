@@ -63,9 +63,8 @@ const BOOKTYPE_LABEL: Record<string, string> = {
   E: "Enciclopedia",
 };
 
-function bggUrl(item: Item): string {
-  if (item.idBgg) return `https://boardgamegeek.com/boardgame/${item.idBgg}`;
-  return `https://boardgamegeek.com/search/boardgame?q=${encodeURIComponent(item.name)}`;
+function bggUrl(idBgg: number): string {
+  return `https://boardgamegeek.com/boardgame/${idBgg}`;
 }
 
 export default function GameRow({
@@ -112,25 +111,18 @@ export default function GameRow({
               {item.bookType}
             </span>
           )}
-          <a
-            href={bggUrl(item)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            title={
-              item.idBgg
-                ? "Apri scheda BGG"
-                : "Cerca su BoardGameGeek"
-            }
-            className={
-              "ml-1.5 inline-block rounded px-1 align-middle text-[9px] font-bold leading-snug " +
-              (item.idBgg
-                ? "bg-orange-500 text-white"
-                : "bg-neutral-200 text-neutral-700")
-            }
-          >
-            BGG{item.idBgg ? "" : "?"}
-          </a>
+          {item.idBgg && (
+            <a
+              href={bggUrl(item.idBgg)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="Apri scheda BGG"
+              className="ml-1.5 inline-block rounded bg-orange-500 px-1 align-middle text-[9px] font-bold leading-snug text-white"
+            >
+              BGG
+            </a>
+          )}
         </span>
         {reservation && (
           <span className="text-[10px] font-medium text-brand-dark">
