@@ -1,38 +1,23 @@
 import type { Item } from "@/types";
-import type { SelectionFlag } from "@/lib/storage";
+import type { CellState, SelectionFlag } from "@/lib/storage";
 import { ForbiddenIcon } from "@/components/icons";
 
 type CellProps = {
-  active: boolean;
-  enabled: boolean;
-  onToggle: () => void;
+  state: CellState | undefined;
+  onClick: () => void;
   label: string;
 };
 
-function Cell({ active, enabled, onToggle, label }: CellProps) {
-  if (!enabled) {
-    return (
-      <div className="flex h-7 w-7 items-center justify-center bg-brand-soft text-neutral-400">
-        <ForbiddenIcon className="h-4 w-4" />
-      </div>
-    );
-  }
+function Cell({ state, onClick, label }: CellProps) {
   return (
     <button
       type="button"
       aria-label={label}
-      aria-pressed={active}
-      onClick={onToggle}
-      className="flex h-7 w-7 items-center justify-center bg-brand-soft active:bg-brand-soft/80"
+      onClick={onClick}
+      className="flex h-7 w-7 items-center justify-center bg-brand-soft active:bg-brand-soft/70"
     >
-      <span
-        className={
-          active
-            ? "flex h-4 w-4 items-center justify-center rounded-sm border-2 border-brand-dark bg-brand-dark text-white"
-            : "h-4 w-4 rounded-sm border-2 border-brand-dark bg-white"
-        }
-      >
-        {active && (
+      {state === "checked" && (
+        <span className="flex h-4 w-4 items-center justify-center rounded-sm border-2 border-brand-dark bg-brand-dark text-white">
           <svg viewBox="0 0 16 16" className="h-3 w-3" aria-hidden="true">
             <path
               d="M3 8.5l3 3 7-7"
@@ -43,57 +28,71 @@ function Cell({ active, enabled, onToggle, label }: CellProps) {
               strokeLinejoin="round"
             />
           </svg>
-        )}
-      </span>
+        </span>
+      )}
+      {state === "forbidden" && (
+        <ForbiddenIcon className="h-4 w-4 text-neutral-700" />
+      )}
+      {state === undefined && (
+        <span className="h-4 w-4 rounded-sm border-2 border-brand-dark bg-white" />
+      )}
     </button>
   );
 }
 
 type GameRowProps = {
   item: Item;
-  selected: Partial<Record<SelectionFlag, true>>;
+  selected: Partial<Record<SelectionFlag, CellState>>;
   hydrated: boolean;
-  onToggle: (itemId: number, flag: SelectionFlag) => void;
+  onCycle: (itemId: number, flag: SelectionFlag) => void;
+};
+
+const BOOKTYPE_LABEL: Record<string, string> = {
+  L: "Librogame",
+  G: "Fumetto game",
+  F: "Fumetto",
+  E: "Enciclopedia",
 };
 
 export default function GameRow({
   item,
   selected,
   hydrated,
-  onToggle,
+  onCycle,
 }: GameRowProps) {
-  const thirdCellIsLetter = Boolean(item.bookType);
+  const stateFor = (flag: SelectionFlag): CellState | undefined =>
+    hydrated ? selected[flag] : undefined;
 
   return (
     <li className="flex items-center gap-2 px-3 py-1.5 text-sm">
       <Cell
-        active={hydrated && !!selected.look}
-        enabled={item.isAvailable}
-        onToggle={() => onToggle(item.id, "look")}
-        label={`Mi interessa ${item.name}`}
+        state={stateFor("look")}
+        onClick={() => onCycle(item.id, "look")}
+        label={`Occhio: ${item.name}`}
       />
       <Cell
-        active={hydrated && !!selected.play}
-        enabled={item.isPlayable}
-        onToggle={() => onToggle(item.id, "play")}
-        label={`Voglio provare ${item.name}`}
+        state={stateFor("play")}
+        onClick={() => onCycle(item.id, "play")}
+        label={`Provare in fiera: ${item.name}`}
       />
-      {thirdCellIsLetter ? (
-        <div className="flex h-7 w-7 items-center justify-center bg-brand-soft font-bold leading-none">
-          {item.bookType}
-        </div>
-      ) : (
-        <Cell
-          active={hydrated && !!selected.buy}
-          enabled={item.isBuyable}
-          onToggle={() => onToggle(item.id, "buy")}
-          label={`Voglio comprare ${item.name}`}
-        />
-      )}
+      <Cell
+        state={stateFor("buy")}
+        onClick={() => onCycle(item.id, "buy")}
+        label={`Comprare: ${item.name}`}
+      />
 
       <div className="flex flex-1 flex-col leading-tight">
-        <span className="font-medium">{item.name}</span>
-        <span className="text-xs text-neutral-500">{item.editor.name}</span>
+        <span className="font-medium">
+          {item.name}
+          {item.bookType && (
+            <span
+              title={BOOKTYPE_LABEL[item.bookType] ?? item.bookType}
+              className="ml-1.5 inline-block rounded bg-brand-soft px-1 text-[10px] font-bold leading-snug align-middle"
+            >
+              {item.bookType}
+            </span>
+          )}
+        </span>
       </div>
     </li>
   );

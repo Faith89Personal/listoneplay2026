@@ -5,9 +5,21 @@ import type { Item } from "@/types";
 import { useSelections } from "@/lib/storage";
 import { useItems } from "@/lib/useItems";
 import GameRow from "@/components/GameRow";
-import { SearchIcon, CloseIcon, MenuIcon } from "@/components/icons";
+import {
+  SearchIcon,
+  CloseIcon,
+  MenuIcon,
+  LookIcon,
+  PlayIcon,
+  BuyIcon,
+} from "@/components/icons";
 
-type Section = { category: { id: number; name: string }; items: Item[] };
+type EditorGroup = { editorName: string; items: Item[] };
+type Section = {
+  category: { id: number; name: string; ordering: number };
+  editorGroups: EditorGroup[];
+  total: number;
+};
 
 function buildSections(items: Item[]): Section[] {
   const byCat = new Map<number, Section>();
@@ -15,32 +27,63 @@ function buildSections(items: Item[]): Section[] {
     let s = byCat.get(item.category.id);
     if (!s) {
       s = {
-        category: { id: item.category.id, name: item.category.name },
-        items: [],
+        category: {
+          id: item.category.id,
+          name: item.category.name,
+          ordering: item.category.ordering,
+        },
+        editorGroups: [],
+        total: 0,
       };
       byCat.set(item.category.id, s);
     }
-    s.items.push(item);
+    let g = s.editorGroups.find((eg) => eg.editorName === item.editor.name);
+    if (!g) {
+      g = { editorName: item.editor.name, items: [] };
+      s.editorGroups.push(g);
+    }
+    g.items.push(item);
+    s.total += 1;
   }
   for (const s of byCat.values()) {
-    s.items.sort((a, b) => a.name.localeCompare(b.name, "it"));
+    for (const g of s.editorGroups) {
+      g.items.sort((a, b) => a.name.localeCompare(b.name, "it"));
+    }
+    s.editorGroups.sort((a, b) =>
+      a.editorName.localeCompare(b.editorName, "it"),
+    );
   }
-  return [...byCat.values()].sort((a, b) => {
-    const ao = items.find((i) => i.category.id === a.category.id)!.category
-      .ordering;
-    const bo = items.find((i) => i.category.id === b.category.id)!.category
-      .ordering;
-    return ao - bo;
-  });
+  return [...byCat.values()].sort(
+    (a, b) => a.category.ordering - b.category.ordering,
+  );
 }
 
 function normalize(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
+function filterSections(sections: Section[], query: string): Section[] {
+  const q = normalize(query.trim());
+  if (!q) return sections;
+  return sections
+    .map((s) => {
+      const editorGroups = s.editorGroups
+        .map((g) => {
+          const editorMatches = normalize(g.editorName).includes(q);
+          if (editorMatches) return g;
+          const items = g.items.filter((it) => normalize(it.name).includes(q));
+          return items.length > 0 ? { ...g, items } : null;
+        })
+        .filter((g): g is EditorGroup => g !== null);
+      const total = editorGroups.reduce((n, g) => n + g.items.length, 0);
+      return total > 0 ? { ...s, editorGroups, total } : null;
+    })
+    .filter((s): s is Section => s !== null);
+}
+
 export default function GameList() {
   const { data, loading, error, stale, refresh } = useItems();
-  const { selections, toggle, hydrated } = useSelections();
+  const { selections, cycle, hydrated } = useSelections();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
@@ -48,23 +91,12 @@ export default function GameList() {
   const items = data?.items ?? [];
 
   const sections = useMemo(() => buildSections(items), [items]);
+  const filteredSections = useMemo(
+    () => filterSections(sections, query),
+    [sections, query],
+  );
 
-  const filteredSections = useMemo(() => {
-    const q = normalize(query.trim());
-    if (!q) return sections;
-    return sections
-      .map((s) => ({
-        ...s,
-        items: s.items.filter(
-          (it) =>
-            normalize(it.name).includes(q) ||
-            normalize(it.editor.name).includes(q),
-        ),
-      }))
-      .filter((s) => s.items.length > 0);
-  }, [sections, query]);
-
-  const totalShown = filteredSections.reduce((n, s) => n + s.items.length, 0);
+  const totalShown = filteredSections.reduce((n, s) => n + s.total, 0);
   const selectedCount = hydrated ? Object.keys(selections).length : 0;
 
   function scrollToCategory(id: number) {
@@ -150,7 +182,7 @@ export default function GameList() {
                     className="w-full rounded px-2 py-1.5 text-left text-white active:bg-white/15"
                   >
                     {s.category.name}{" "}
-                    <span className="opacity-70">({s.items.length})</span>
+                    <span className="opacity-70">({s.total})</span>
                   </button>
                 </li>
               ))}
@@ -183,11 +215,13 @@ export default function GameList() {
           </div>
         )}
 
-        {!showEmptyState && filteredSections.length === 0 && items.length > 0 && (
-          <p className="px-3 py-12 text-center text-sm text-neutral-500">
-            Nessun titolo trovato.
-          </p>
-        )}
+        {!showEmptyState &&
+          filteredSections.length === 0 &&
+          items.length > 0 && (
+            <p className="px-3 py-12 text-center text-sm text-neutral-500">
+              Nessun titolo trovato.
+            </p>
+          )}
 
         {filteredSections.map((s) => (
           <section
@@ -199,21 +233,49 @@ export default function GameList() {
           >
             <h2 className="-mx-3 mb-2 bg-brand-dark px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white">
               {s.category.name}{" "}
-              <span className="font-normal opacity-80">
-                ({s.items.length})
-              </span>
+              <span className="font-normal opacity-80">({s.total})</span>
             </h2>
-            <ul className="divide-y divide-neutral-100 overflow-hidden rounded-lg bg-white shadow-sm">
-              {s.items.map((it) => (
-                <GameRow
-                  key={it.id}
-                  item={it}
-                  selected={selections[it.id] ?? {}}
-                  hydrated={hydrated}
-                  onToggle={toggle}
-                />
+
+            <div className="flex items-center gap-2 px-3 pb-1 pt-0.5 text-[10px] uppercase tracking-wide text-neutral-500">
+              <div className="flex h-7 w-7 items-center justify-center">
+                <LookIcon className="h-4 w-4 text-brand-dark" />
+              </div>
+              <div className="flex h-7 w-7 items-center justify-center">
+                <PlayIcon className="h-4 w-4 text-brand-dark" />
+              </div>
+              <div className="flex h-7 w-7 items-center justify-center">
+                <BuyIcon className="h-4 w-4 text-brand-dark" />
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
+              {s.editorGroups.map((g, idx) => (
+                <div key={g.editorName}>
+                  <div
+                    className={
+                      "bg-neutral-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-700" +
+                      (idx > 0 ? " border-t border-neutral-200" : "")
+                    }
+                  >
+                    {g.editorName}{" "}
+                    <span className="font-normal text-neutral-500">
+                      ({g.items.length})
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-neutral-100">
+                    {g.items.map((it) => (
+                      <GameRow
+                        key={it.id}
+                        item={it}
+                        selected={selections[it.id] ?? {}}
+                        hydrated={hydrated}
+                        onCycle={cycle}
+                      />
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           </section>
         ))}
       </main>

@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "listoneplay2026:selections:v1";
+const STORAGE_KEY = "listoneplay2026:selections:v2";
 
 export type SelectionFlag = "look" | "play" | "buy";
-export type Selections = Record<number, Partial<Record<SelectionFlag, true>>>;
+export type CellState = "checked" | "forbidden";
+export type Selections = Record<
+  number,
+  Partial<Record<SelectionFlag, CellState>>
+>;
 
 function readSelections(): Selections {
   if (typeof window === "undefined") return {};
@@ -29,6 +33,12 @@ function writeSelections(value: Selections) {
   }
 }
 
+function nextState(current: CellState | undefined): CellState | undefined {
+  if (current === undefined) return "checked";
+  if (current === "checked") return "forbidden";
+  return undefined;
+}
+
 export function useSelections() {
   const [selections, setSelections] = useState<Selections>({});
   const [hydrated, setHydrated] = useState(false);
@@ -38,24 +48,26 @@ export function useSelections() {
     setHydrated(true);
   }, []);
 
-  function toggle(itemId: number, flag: SelectionFlag) {
+  function cycle(itemId: number, flag: SelectionFlag) {
     setSelections((prev) => {
       const current = prev[itemId] ?? {};
       const next: Selections = { ...prev };
-      if (current[flag]) {
-        const { [flag]: _, ...rest } = current;
-        if (Object.keys(rest).length === 0) {
-          delete next[itemId];
-        } else {
-          next[itemId] = rest;
-        }
+      const updated = { ...current };
+      const nv = nextState(current[flag]);
+      if (nv === undefined) {
+        delete updated[flag];
       } else {
-        next[itemId] = { ...current, [flag]: true };
+        updated[flag] = nv;
+      }
+      if (Object.keys(updated).length === 0) {
+        delete next[itemId];
+      } else {
+        next[itemId] = updated;
       }
       writeSelections(next);
       return next;
     });
   }
 
-  return { selections, toggle, hydrated };
+  return { selections, cycle, hydrated };
 }
