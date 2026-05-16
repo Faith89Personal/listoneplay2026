@@ -1,4 +1,628 @@
 {
-  "updatedAt": "",
-  "games": {}
+  "updatedAt": "2026-05-16T09:06:26.631Z",
+  "games": {
+    "101": {
+      "bggId": 411330,
+      "bggName": "Aces High",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "103": {
+      "bggId": 301083,
+      "bggName": "Una Guerra Impossibile. La Prima Guerra Carlista nel Nord 1834-1838",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "104": {
+      "bggId": 1162,
+      "bggName": "Burp",
+      "year": 1995,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "105": {
+      "bggId": 444497,
+      "bggName": "I Fantasmi dell'Abbazia",
+      "year": null,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "108": {
+      "bggId": 456440,
+      "bggName": "Cozy Stickerville",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "109": {
+      "bggId": 404509,
+      "bggName": "Cthulhu: Dark Providence",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "110": {
+      "bggId": 433283,
+      "bggName": "Daydream",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "111": {
+      "bggId": 439742,
+      "bggName": "Dewan",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "112": {
+      "bggId": 432456,
+      "bggName": "DNUP",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "113": {
+      "bggId": 462464,
+      "bggName": "First Giants",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "114": {
+      "bggId": 466461,
+      "bggName": "Hellbreak",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "115": {
+      "bggId": 448271,
+      "bggName": "Il Signore degli Anelli: Le Due Torri – Trick-Taking Game",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "116": {
+      "bggId": 266722,
+      "bggName": "Rumble Nation",
+      "year": 2017,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "117": {
+      "bggId": 434906,
+      "bggName": "Tag Team",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "118": {
+      "bggId": 440540,
+      "bggName": "Take Time",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "119": {
+      "bggId": 452397,
+      "bggName": "That's Totally You",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "121": {
+      "bggId": 432701,
+      "bggName": "The League of the Extraordinary Collectors",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "124": {
+      "bggId": 466858,
+      "bggName": "Il Trono di Carte",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "129": {
+      "bggId": 216710,
+      "bggName": "Wings of Glory: WW2 Battle of Britain Starter Set",
+      "year": 2017,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "130": {
+      "bggId": 455614,
+      "bggName": "CheekyChess",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "131": {
+      "bggId": 457589,
+      "bggName": "Disco Draw",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "132": {
+      "bggId": 461518,
+      "bggName": "Geopop: Super quiz della Scienza",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "136": {
+      "bggId": 3439,
+      "bggName": "HeroClix",
+      "year": 2002,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "137": {
+      "bggId": 317526,
+      "bggName": "Masters of The Universe: Fields of Eternia The Board Game",
+      "year": 2022,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "138": {
+      "bggId": 432261,
+      "bggName": "Trench Crusade",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "139": {
+      "bggId": 240824,
+      "bggName": "Corks",
+      "year": 2017,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "140": {
+      "bggId": 470811,
+      "bggName": "Crossing Heroes",
+      "year": null,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "141": {
+      "bggId": 438442,
+      "bggName": "La Palude di Feya",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "142": {
+      "bggId": 458770,
+      "bggName": "Minikin City",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "144": {
+      "bggId": 470814,
+      "bggName": "Oil Rock",
+      "year": null,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "145": {
+      "bggId": 458824,
+      "bggName": "Orcs up!",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "146": {
+      "bggId": 459767,
+      "bggName": "Planet Bee",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "148": {
+      "bggId": 432709,
+      "bggName": "Severton",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "150": {
+      "bggId": 455864,
+      "bggName": "Colleghi",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "151": {
+      "bggId": 455865,
+      "bggName": "De Influencer",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "153": {
+      "bggId": 468569,
+      "bggName": "Tatanka",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "154": {
+      "bggId": 468730,
+      "bggName": "The Way We Collect",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "156": {
+      "bggId": 468235,
+      "bggName": "Mozquitoz",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "159": {
+      "bggId": 448377,
+      "bggName": "Bag & Snatch: Backyard Brawl",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "162": {
+      "bggId": 470657,
+      "bggName": "Shizoku",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "165": {
+      "bggId": 344017,
+      "bggName": "Dodo",
+      "year": 2021,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "167": {
+      "bggId": 9609,
+      "bggName": "La Guerra dell'Anello",
+      "year": 2004,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "170": {
+      "bggId": 457267,
+      "bggName": "Caballo",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "176": {
+      "bggId": 457961,
+      "bggName": "Gatti che odiano i cetrioli",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "182": {
+      "bggId": 27708,
+      "bggName": "1960: The Making of the President",
+      "year": 2007,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "197": {
+      "bggId": 449853,
+      "bggName": "Fiori di Cristallo",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "200": {
+      "bggId": 453526,
+      "bggName": "Magic Five",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "203": {
+      "bggId": 387763,
+      "bggName": "Qua ti sbagli",
+      "year": 2023,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "206": {
+      "bggId": 411567,
+      "bggName": "The Gang",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "211": {
+      "bggId": 379409,
+      "bggName": "Fief: England",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "214": {
+      "bggId": 350198,
+      "bggName": "Terminus",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "217": {
+      "bggId": 464279,
+      "bggName": "Paleolino",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "221": {
+      "bggId": 1465,
+      "bggName": "Wizard",
+      "year": 1984,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "226": {
+      "bggId": 469976,
+      "bggName": "KartomantiK",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "232": {
+      "bggId": 458571,
+      "bggName": "Bookshelf",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "235": {
+      "bggId": 431493,
+      "bggName": "Forestry",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "237": {
+      "bggId": 421606,
+      "bggName": "Knitting Circle",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "240": {
+      "bggId": 393175,
+      "bggName": "Nocturne",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "243": {
+      "bggId": 426476,
+      "bggName": "Paperino in Happy Camper",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "246": {
+      "bggId": 451929,
+      "bggName": "Yes but No",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "248": {
+      "bggId": 452214,
+      "bggName": "Black Rose Wars: Duel – Kami",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "257": {
+      "bggId": 208134,
+      "bggName": "Danger the Game",
+      "year": 2018,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "259": {
+      "bggId": 286365,
+      "bggName": "Resonance",
+      "year": 2022,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "262": {
+      "bggId": 468971,
+      "bggName": "Of Soil and Stones",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "265": {
+      "bggId": 425602,
+      "bggName": "YUBIBO",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "268": {
+      "bggId": 443116,
+      "bggName": "Sketch!",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "270": {
+      "bggId": 469067,
+      "bggName": "Barbascura X: Bestie Bastarde",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "273": {
+      "bggId": 467450,
+      "bggName": "Nova Lectio: Status",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "282": {
+      "bggId": 437384,
+      "bggName": "Bohemians",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "285": {
+      "bggId": 351849,
+      "bggName": "Chang'an",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "291": {
+      "bggId": 257668,
+      "bggName": "1906 San Francisco",
+      "year": 2018,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "294": {
+      "bggId": 279306,
+      "bggName": "1987 Channel Tunnel",
+      "year": 2019,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "297": {
+      "bggId": 369024,
+      "bggName": "Valley Hoopers: The Series",
+      "year": 2023,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "309": {
+      "bggId": 456055,
+      "bggName": "DJ Set",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "313": {
+      "bggId": 33655,
+      "bggName": "Family Night Frenzy",
+      "year": 2005,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "319": {
+      "bggId": 374134,
+      "bggName": "Chandigarh",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "327": {
+      "bggId": 338376,
+      "bggName": "A Gest of Robin Hood",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "331": {
+      "bggId": 415845,
+      "bggName": "Grimcoven",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "333": {
+      "bggId": 174570,
+      "bggName": "Legendary Encounters: A Predator Deck Building Game",
+      "year": 2015,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "336": {
+      "bggId": 438473,
+      "bggName": "March of the Ants: Evolved Edition – Deluxe Edition",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "339": {
+      "bggId": 422541,
+      "bggName": "Star Trek: Captain's Chair",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "341": {
+      "bggId": 345266,
+      "bggName": "Tales from the Red Dragon Inn",
+      "year": 2023,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "344": {
+      "bggId": 428308,
+      "bggName": "Unmatched: Lee vs Ali",
+      "year": 2025,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "347": {
+      "bggId": 463011,
+      "bggName": "Hoxfall",
+      "year": 2027,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "353": {
+      "bggId": 431308,
+      "bggName": "Hitster: Rock",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "359": {
+      "bggId": 469594,
+      "bggName": "Carcassonne Labyrinth",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "362": {
+      "bggId": 463783,
+      "bggName": "Las Vegas",
+      "year": 2026,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "364": {
+      "bggId": 383983,
+      "bggName": "Bone Wars",
+      "year": 2024,
+      "type": "boardgame",
+      "source": "scrape"
+    },
+    "401": {
+      "bggId": 230967,
+      "bggName": "Verrix",
+      "year": 2022,
+      "type": "boardgame",
+      "source": "scrape"
+    }
+  }
 }

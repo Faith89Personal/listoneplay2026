@@ -52,6 +52,31 @@ Poi commit + push come sopra.
 
 ---
 
+## Pagina link BGG (`/bgg`) e scraping
+
+Pagina nascosta (no login, no indicizzazione, non in navigazione), raggiungibile solo via link diretto:
+
+```
+https://listoneplay2026.vercel.app/bgg
+```
+
+Mostra **solo i giochi da tavolo** (categoria `GIOCHI DA TAVOLO`, esclusi giochi di ruolo e librogame), divisi per editore. Ogni gioco linka direttamente alla scheda BoardGameGeek se l'ID è noto, altrimenti alla ricerca BGG.
+
+Gli ID vengono da `src/data/bgg.json`. Due modi per popolarlo:
+
+```bash
+npm run bgg-refresh -- --force     # via XML API 2 (richiede BGG_TOKEN)
+node scripts/bgg-scrape.mjs --force # via scraping HTML della ricerca (usa curl.exe)
+```
+
+Lo **scraping** (`bgg-scrape.mjs`) non richiede token: fa il fetch della pagina di ricerca di ogni gioco con `curl.exe` (passa dal proxy aziendale, a differenza di `fetch` Node), legge la tabella `#collectionitems` e sceglie il risultato col **nome esatto** e, tra quelli, l'**anno più recente** (gestisce ristampe/nuove edizioni; evita spin-off tipo "Dice Game"). Se nessun nome combacia esatto, ripiega sull'anno più recente fra tutti i risultati.
+
+Tempo: ~9 minuti per 274 giochi (pausa 0.9s tra le richieste). Output in `src/data/bgg.json` (stesso formato di `bgg-refresh`, quindi `/api/items` lo fa già il merge in `idBgg`).
+
+Per i giochi non trovati o sbagliati: correggi a mano in `src/data/bgg-aliases.json` (vince sull'auto). Poi commit + push di `src/data/bgg.json`.
+
+---
+
 ## Sostituire la mappa del Play
 
 1. Scarica il nuovo PDF dal sito ufficiale di Play
