@@ -29,13 +29,60 @@ function searchUrl(name) {
   );
 }
 
-async function fetchHtml(url) {
+// Fetches the page, returning { code, html }. BGG throttles bursts with
+// HTTP 403/429, so the caller retries those with backoff.
+async function fetchOnce(url) {
   const { stdout } = await execFileP(
     "curl.exe",
-    ["-s", "-L", "--max-time", "30", "-A", UA, url],
+    [
+      "-s",
+      "-L",
+      "--compressed",
+      "--max-time",
+      "30",
+      "-A",
+      UA,
+      "-H",
+      "Accept-Language: it-IT,it;q=0.9,en;q=0.8",
+      "-H",
+      "Referer: https://boardgamegeek.com/",
+      "-w",
+      "\n__HTTP__%{http_code}",
+      url,
+    ],
     { maxBuffer: 32 * 1024 * 1024 },
   );
-  return stdout;
+  const i = stdout.lastIndexOf("\n__HTTP__");
+  if (i === -1) return { code: 0, html: stdout };
+  return {
+    code: Number(stdout.slice(i + 9).trim()) || 0,
+    html: stdout.slice(0, i),
+  };
+}
+
+async function fetchHtml(url) {
+  const backoff = [8000, 16000, 30000];
+  for (let attempt = 0; attempt <= backoff.length; attempt++) {
+    const { code, html } = await fetchOnce(url);
+    const blocked = code === 403 || code === 429 || (code >= 500 && code < 600);
+    if (!blocked) return html;
+    if (attempt === backoff.length) {
+      throw new Error(`blocked HTTP ${code}`);
+    }
+    process.stdout.write(`(HTTP ${code}, retry in ${backoff[attempt] / 1000}s) `);
+    await sleep(backoff[attempt]);
+  }
+  return "";
+}
+
+// Strips Italian helper suffixes so a second search can still match.
+function cleanTitle(name) {
+  return name
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\s[-–—]\s.*$/g, " ")
+    .replace(/\b(versione|edizione)\b.*$/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
@@ -121,8 +168,15 @@ async function main() {
       `[${String(i + 1).padStart(3)}/${targets.length}] ${it.name} … `,
     );
     try {
-      const html = await fetchHtml(searchUrl(it.name));
-      const hit = parseResults(html, it.name);
+      let hit = parseResults(
+        await fetchHtml(searchUrl(it.name)),
+        it.name,
+      );
+      const cleaned = cleanTitle(it.name);
+      if ((!hit || !Number.isFinite(hit.id)) && cleaned && cleaned !== it.name) {
+        await sleep(1200);
+        hit = parseResults(await fetchHtml(searchUrl(cleaned)), cleaned);
+      }
       if (hit && Number.isFinite(hit.id)) {
         games[idStr] = {
           bggId: hit.id,
@@ -141,7 +195,7 @@ async function main() {
       console.log(`error: ${err.message}`);
       failed += 1;
     }
-    await sleep(600);
+    await sleep(1500);
   }
 
   const out = { updatedAt: new Date().toISOString(), games };
