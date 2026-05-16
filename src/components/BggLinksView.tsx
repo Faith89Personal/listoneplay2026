@@ -65,9 +65,22 @@ export default function BggLinksView() {
           Giochi · ricerca BoardGameGeek
         </h1>
         <p className="mt-1 text-sm text-neutral-600">
-          Solo giochi da tavolo. Il link punta alla scheda BoardGameGeek
-          (alla ricerca se non ancora risolto).
+          Solo giochi da tavolo.
         </p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-500">
+          <span className="flex items-center gap-1">
+            <span className="rounded bg-brand px-1.5 py-0.5 font-semibold text-white">
+              BGG
+            </span>
+            scheda diretta
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="rounded border border-amber-400 bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700">
+              cerca
+            </span>
+            ricerca (nessun match diretto)
+          </span>
+        </div>
       </header>
 
       {error && !items && (
@@ -94,14 +107,52 @@ export default function BggLinksView() {
                   <span className="min-w-0 flex-1 truncate text-sm text-neutral-800">
                     {it.name}
                   </span>
-                  <a
-                    href={bggUrl(it)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white active:bg-brand-dark"
-                  >
-                    BGG
-                  </a>
+                  {it.idBgg ? (
+                    <a
+                      href={bggUrl(it)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Scheda BoardGameGeek"
+                      className="flex shrink-0 items-center gap-1 rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white active:bg-brand-dark"
+                    >
+                      BGG
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3 w-3"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <a
+                      href={bggUrl(it)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Ricerca su BoardGameGeek (nessun match diretto)"
+                      className="flex shrink-0 items-center gap-1 rounded-md border border-amber-400 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 active:bg-amber-100"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3 w-3"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="11" cy="11" r="7" />
+                        <line x1="21" y1="21" x2="16.5" y2="16.5" />
+                      </svg>
+                      cerca
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
