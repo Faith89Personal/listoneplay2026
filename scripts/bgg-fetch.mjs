@@ -19,7 +19,8 @@ if (!TOKEN) {
   process.exit(1);
 }
 
-const TYPES = "boardgame,boardgameexpansion,boardgameaccessory";
+const TYPES = "boardgame";
+const BOARDGAME_CATEGORY = "GIOCHI DA TAVOLO";
 const xml = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "",
@@ -70,19 +71,25 @@ async function bggSearch(query, exact) {
     .filter((x) => Number.isFinite(x.id));
 }
 
+// Among the search results, keep board games and pick the most recent
+// year published (the catalog often lists recent reprints/new editions).
+function pickMostRecent(results) {
+  const games = results.filter((x) => x.type === "boardgame");
+  const pool = games.length > 0 ? games : results;
+  if (pool.length === 0) return null;
+  return pool
+    .slice()
+    .sort((a, b) => (b.year ?? -Infinity) - (a.year ?? -Infinity))[0];
+}
+
 async function lookup(name) {
   let r = await bggSearch(name, true);
-  if (r.length > 0) {
-    // Prefer non-expansion when an exact match returns multiple types
-    const game = r.find((x) => x.type === "boardgame") ?? r[0];
-    return { ...game, source: "exact" };
-  }
+  let pick = pickMostRecent(r);
+  if (pick) return { ...pick, source: "exact" };
   await sleep(400);
   r = await bggSearch(name, false);
-  if (r.length > 0) {
-    const game = r.find((x) => x.type === "boardgame") ?? r[0];
-    return { ...game, source: "fuzzy" };
-  }
+  pick = pickMostRecent(r);
+  if (pick) return { ...pick, source: "fuzzy" };
   return null;
 }
 
@@ -112,9 +119,14 @@ async function main() {
   let skipped = 0;
   let failed = 0;
   let notFound = 0;
+  let nonBoardgame = 0;
 
   for (const it of items) {
     const idStr = String(it.id);
+    if (it?.category?.name !== BOARDGAME_CATEGORY) {
+      nonBoardgame += 1;
+      continue;
+    }
     if (!force && games[idStr]) {
       skipped += 1;
       continue;
@@ -157,7 +169,7 @@ async function main() {
   };
   await writeFile(OUT, JSON.stringify(out, null, 2) + "\n", "utf8");
   console.log(
-    `\nDone. Added ${added}, kept ${skipped}, not found ${notFound}, failed ${failed}. Total mapped: ${Object.keys(games).length}.`,
+    `\nDone. Added ${added}, kept ${skipped}, not found ${notFound}, failed ${failed}, skipped non-boardgame ${nonBoardgame}. Total mapped: ${Object.keys(games).length}.`,
   );
 }
 

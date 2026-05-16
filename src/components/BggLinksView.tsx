@@ -3,11 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Item } from "@/types";
 
+const BOARDGAME_CATEGORY = "GIOCHI DA TAVOLO";
+
 function bggSearchUrl(name: string): string {
   return (
     "https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=" +
     encodeURIComponent(name)
   );
+}
+
+function bggUrl(it: Item): string {
+  return it.idBgg
+    ? `https://boardgamegeek.com/boardgame/${it.idBgg}`
+    : bggSearchUrl(it.name);
 }
 
 export default function BggLinksView() {
@@ -36,6 +44,7 @@ export default function BggLinksView() {
     if (!items) return [];
     const byEditor = new Map<string, Item[]>();
     for (const it of items) {
+      if (it.category?.name !== BOARDGAME_CATEGORY) continue;
       const key = it.editor.name?.trim() || "(Senza editore)";
       const list = byEditor.get(key);
       if (list) list.push(it);
@@ -56,7 +65,8 @@ export default function BggLinksView() {
           Giochi · ricerca BoardGameGeek
         </h1>
         <p className="mt-1 text-sm text-neutral-600">
-          Ogni gioco rimanda alla ricerca su BoardGameGeek.
+          Solo giochi da tavolo. Il link punta alla scheda BoardGameGeek
+          (alla ricerca se non ancora risolto).
         </p>
       </header>
 
@@ -85,7 +95,7 @@ export default function BggLinksView() {
                     {it.name}
                   </span>
                   <a
-                    href={bggSearchUrl(it.name)}
+                    href={bggUrl(it)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="shrink-0 rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white active:bg-brand-dark"
