@@ -46,7 +46,7 @@ type Section = {
   editorGroups: EditorGroup[];
 };
 
-type Filter = "all" | "look" | "play" | "reserved" | "played";
+type Filter = "look" | "play" | "reserved" | "played";
 
 const MAP_PDF_URL = "/Mappa-Play-2026.pdf";
 
@@ -100,17 +100,21 @@ function normalize(s: string): string {
 function filterSections(
   sections: Section[],
   query: string,
-  filter: Filter,
+  filters: Set<Filter>,
   selections: Selections,
   reservationByItem: Map<number, Reservation>,
   playByItem: Map<number, Play>,
 ): Section[] {
   const q = normalize(query.trim());
+  const matches = (it: Item, f: Filter) => {
+    if (f === "reserved") return reservationByItem.has(it.id);
+    if (f === "played") return playByItem.has(it.id);
+    return selections[it.id]?.[f] === "checked";
+  };
   const passesFilter = (it: Item) => {
-    if (filter === "all") return true;
-    if (filter === "reserved") return reservationByItem.has(it.id);
-    if (filter === "played") return playByItem.has(it.id);
-    return selections[it.id]?.[filter] === "checked";
+    if (filters.size === 0) return true;
+    for (const f of filters) if (matches(it, f)) return true;
+    return false;
   };
   return sections
     .map((s) => {
@@ -197,7 +201,14 @@ export default function GameList() {
   const rushesState = useRushes();
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filters, setFilters] = useState<Set<Filter>>(new Set());
+  const toggleFilter = (f: Filter) =>
+    setFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(f)) next.delete(f);
+      else next.add(f);
+      return next;
+    });
   const [reservingItem, setReservingItem] = useState<Item | null>(null);
   const [ratingItem, setRatingItem] = useState<Item | null>(null);
   const [rushingItem, setRushingItem] = useState<Item | null>(null);
@@ -282,12 +293,12 @@ export default function GameList() {
       filterSections(
         sections,
         query,
-        filter,
+        filters,
         selections,
         reservationByItem,
         playByItem,
       ),
-    [sections, query, filter, selections, reservationByItem, playByItem],
+    [sections, query, filters, selections, reservationByItem, playByItem],
   );
 
   function scrollToCategory(id: number) {
@@ -414,29 +425,38 @@ export default function GameList() {
         </div>
         <AuthBar />
         <div className="mx-auto flex max-w-2xl items-center gap-1.5 overflow-x-auto px-3 pb-3">
-          <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
+          <FilterChip
+            active={filters.size === 0}
+            onClick={() => setFilters(new Set())}
+          >
             Tutti
           </FilterChip>
-          <FilterChip active={filter === "look"} onClick={() => setFilter("look")}>
+          <FilterChip
+            active={filters.has("look")}
+            onClick={() => toggleFilter("look")}
+          >
             <LookIcon className="h-3.5 w-3.5" />
             <span>Occhio</span>
           </FilterChip>
-          <FilterChip active={filter === "play"} onClick={() => setFilter("play")}>
+          <FilterChip
+            active={filters.has("play")}
+            onClick={() => toggleFilter("play")}
+          >
             <PlayIcon className="h-3.5 w-3.5" />
             <span>Provare</span>
           </FilterChip>
           {reservationsState.loggedIn && (
             <>
               <FilterChip
-                active={filter === "reserved"}
-                onClick={() => setFilter("reserved")}
+                active={filters.has("reserved")}
+                onClick={() => toggleFilter("reserved")}
               >
                 <CalendarIcon className="h-3.5 w-3.5" />
                 <span>Prenotati</span>
               </FilterChip>
               <FilterChip
-                active={filter === "played"}
-                onClick={() => setFilter("played")}
+                active={filters.has("played")}
+                onClick={() => toggleFilter("played")}
               >
                 <StarIcon filled className="h-3.5 w-3.5" />
                 <span>Giocati</span>
@@ -511,13 +531,9 @@ export default function GameList() {
 
         {noResults && (
           <p className="px-3 py-12 text-center text-sm text-neutral-500">
-            {filter === "reserved"
-              ? "Nessun gioco prenotato."
-              : filter === "played"
-                ? "Nessun gioco giocato."
-                : filter !== "all"
-                  ? "Nessun titolo selezionato per questo filtro."
-                  : "Nessun titolo trovato."}
+            {filters.size > 0
+              ? "Nessun titolo per i filtri selezionati."
+              : "Nessun titolo trovato."}
           </p>
         )}
 
