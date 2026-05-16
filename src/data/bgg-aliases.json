@@ -1,4 +1,15 @@
 {
   "_comment": "Map an API game name (exact match) to a BGG game ID for direct links. Without an alias the BGG button opens the BGG search results page for that name. Find an ID by going to https://boardgamegeek.com/search/boardgame?q=NAME and copying the number after /boardgame/ in the URL of the right game.",
-  "_example_Carcassonne": 822
+  "_example_Carcassonne": 822,
+  "Dorfromantik: Viaggiare Leggeri": 449931,
+  "Nippon: Zaibatsu ‐ Emperor's Edition": 434367,
+  "Roxanne": 275058,
+  "Wingspan: Americhe": 461932,
+  "Rumors & Ribbons": 464204,
+  "Unmatched: Tartarughe Ninja": 425276,
+  "Apex Legends: Il Gioco da Tavolo": 380681,
+  "Torghal": 358216,
+  "An Age Contrived: Folclore e Pellegrinaggio": 423466,
+  "Galileo Galilei: Luna": 446834,
+  "Formaggio Limited Ed.": 384213
 }
