@@ -10,6 +10,7 @@ type Row = {
   rating: number;
   note: string | null;
   played_at: string;
+  bought: boolean;
 };
 
 export async function GET() {
@@ -20,7 +21,7 @@ export async function GET() {
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT item_id, rating, note, played_at
+      SELECT item_id, rating, note, played_at, bought
       FROM plays
       WHERE email = ${session.email}
       ORDER BY played_at DESC
@@ -31,6 +32,7 @@ export async function GET() {
         rating: r.rating,
         note: r.note,
         playedAt: r.played_at,
+        bought: r.bought,
       })),
     });
   } catch (err) {
@@ -45,6 +47,7 @@ type PostBody = {
   itemId?: unknown;
   rating?: unknown;
   note?: unknown;
+  bought?: unknown;
 };
 
 export async function POST(req: Request) {
@@ -76,14 +79,16 @@ export async function POST(req: Request) {
     typeof body.note === "string" && body.note.length > 0
       ? body.note.trim().slice(0, 500)
       : null;
+  const bought = body.bought === true;
   try {
     const sql = requireSql();
     await sql`
-      INSERT INTO plays (email, item_id, rating, note, played_at, updated_at)
-      VALUES (${session.email}, ${itemId}, ${rating}, ${note}, NOW(), NOW())
+      INSERT INTO plays (email, item_id, rating, note, bought, played_at, updated_at)
+      VALUES (${session.email}, ${itemId}, ${rating}, ${note}, ${bought}, NOW(), NOW())
       ON CONFLICT (email, item_id)
       DO UPDATE SET rating = EXCLUDED.rating,
                     note = EXCLUDED.note,
+                    bought = EXCLUDED.bought,
                     updated_at = NOW()
     `;
     return NextResponse.json({ ok: true });

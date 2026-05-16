@@ -10,6 +10,7 @@ export type ManualPlay = {
   rating: number;
   playedOn: string | null;
   note: string | null;
+  bought: boolean;
 };
 
 export type ManualPlaysState = {
@@ -81,6 +82,7 @@ export function useManualPlays() {
       rating: number;
       playedOn: string | null;
       note: string | null;
+      bought: boolean;
     }) => {
       const res = await fetch("/api/manual-plays", {
         method: "POST",

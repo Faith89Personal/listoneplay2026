@@ -5,7 +5,7 @@ import { useSession } from "@/lib/useSession";
 
 const STORAGE_KEY = "listoneplay2026:selections:v2";
 
-export type SelectionFlag = "look" | "play" | "buy";
+export type SelectionFlag = "look" | "play";
 export type CellState = "checked" | "forbidden";
 export type Selections = Record<
   number,
@@ -52,7 +52,7 @@ function fromApi(api: ApiSelections): Selections {
     const id = Number(idStr);
     if (!Number.isFinite(id) || !flags) continue;
     const entry: Partial<Record<SelectionFlag, CellState>> = {};
-    for (const f of ["look", "play", "buy"] as const) {
+    for (const f of ["look", "play"] as const) {
       const v = flags[f];
       if (v === "checked" || v === "forbidden") entry[f] = v;
     }
@@ -67,7 +67,7 @@ function diffMissingOps(local: Selections, remote: Selections): PendingOp[] {
     const id = Number(idStr);
     if (!flags) continue;
     const remoteFlags = remote[id] ?? {};
-    for (const f of ["look", "play", "buy"] as const) {
+    for (const f of ["look", "play"] as const) {
       const lv = flags[f];
       const rv = remoteFlags[f];
       if (lv && lv !== rv) ops.push({ kind: "upsert", itemId: id, flag: f, state: lv });
@@ -129,7 +129,7 @@ export function useSelections() {
           const id = Number(idStr);
           if (!flags) continue;
           const existing = merged[id] ?? {};
-          for (const f of ["look", "play", "buy"] as const) {
+          for (const f of ["look", "play"] as const) {
             if (!existing[f] && flags[f]) existing[f] = flags[f];
           }
           if (Object.keys(existing).length > 0) merged[id] = existing;

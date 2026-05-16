@@ -109,10 +109,14 @@ export default function RushModal({ item, stand, onClose }: Props) {
                 const editorLine = item.editor?.name
                   ? `\n🏢 ${item.editor.name}`
                   : "";
+                const bggLine = item.idBgg
+                  ? `\n🔗 https://boardgamegeek.com/boardgame/${item.idBgg}`
+                  : "";
                 const text =
                   `⚡ Si sta per liberare: ${item.name}` +
                   editorLine +
                   standLine +
+                  bggLine +
                   `\n\nQualcuno vuole unirsi? Me lo dica subito!`;
                 if (typeof navigator !== "undefined" && navigator.share) {
                   try {

@@ -31,7 +31,6 @@ import {
   MenuIcon,
   LookIcon,
   PlayIcon,
-  BuyIcon,
   CalendarIcon,
   StarIcon,
   AlarmIcon,
@@ -47,7 +46,7 @@ type Section = {
   editorGroups: EditorGroup[];
 };
 
-type Filter = "all" | "look" | "play" | "buy" | "reserved" | "played";
+type Filter = "all" | "look" | "play" | "reserved" | "played";
 
 const MAP_PDF_URL = "/Mappa-Play-2026.pdf";
 
@@ -140,9 +139,6 @@ function ColumnHeader() {
       </div>
       <div className="flex h-6 w-7 items-center justify-center">
         <PlayIcon className="h-4 w-4" />
-      </div>
-      <div className="flex h-6 w-7 items-center justify-center">
-        <BuyIcon className="h-4 w-4" />
       </div>
     </div>
   );
@@ -428,10 +424,6 @@ export default function GameList() {
           <FilterChip active={filter === "play"} onClick={() => setFilter("play")}>
             <PlayIcon className="h-3.5 w-3.5" />
             <span>Provare</span>
-          </FilterChip>
-          <FilterChip active={filter === "buy"} onClick={() => setFilter("buy")}>
-            <BuyIcon className="h-3.5 w-3.5" />
-            <span>Comprare</span>
           </FilterChip>
           {reservationsState.loggedIn && (
             <>

@@ -5,7 +5,7 @@ import { getSessionFromCookies } from "@/lib/session";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const FLAGS = new Set(["look", "play", "buy"]);
+const FLAGS = new Set(["look", "play"]);
 const STATES = new Set(["checked", "forbidden"]);
 
 type SelectionRow = { item_id: number; flag: string; state: string };

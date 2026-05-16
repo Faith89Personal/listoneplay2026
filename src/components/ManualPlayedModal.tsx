@@ -18,6 +18,7 @@ export default function ManualPlayedModal({ existing, onClose }: Props) {
   const [rating, setRating] = useState<number>(existing?.rating ?? 0);
   const [hover, setHover] = useState<number>(0);
   const [note, setNote] = useState<string>(existing?.note ?? "");
+  const [bought, setBought] = useState<boolean>(existing?.bought ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +50,7 @@ export default function ManualPlayedModal({ existing, onClose }: Props) {
         playedOn: playedOn || null,
         rating,
         note: note.trim() || null,
+        bought,
       });
       onClose();
     } catch (err) {
@@ -206,6 +208,35 @@ export default function ManualPlayedModal({ existing, onClose }: Props) {
               className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
             />
           </label>
+
+          <button
+            type="button"
+            onClick={() => setBought((v) => !v)}
+            aria-pressed={bought}
+            className={
+              "flex w-full items-center justify-between rounded-md border px-3 py-2 text-left " +
+              (bought
+                ? "border-brand-dark bg-brand-soft"
+                : "border-neutral-300 bg-white")
+            }
+          >
+            <span className="text-sm font-medium text-neutral-800">
+              Lo compresti?
+            </span>
+            <span
+              className={
+                "relative h-5 w-9 shrink-0 rounded-full transition-colors " +
+                (bought ? "bg-brand" : "bg-neutral-300")
+              }
+            >
+              <span
+                className={
+                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all " +
+                  (bought ? "left-[18px]" : "left-0.5")
+                }
+              />
+            </span>
+          </button>
 
           {error && (
             <p

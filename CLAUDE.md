@@ -98,8 +98,10 @@ codice e identificatori in inglese.
 
 ### Schema DB (vedi `scripts/migrate.mjs`)
 - `users(email PK, name)` — email-only, name nullable ma ora richiesto al login
-- `selections(email, item_id, flag, state)` — stato delle 3 caselle per gioco
-  (look/play/buy × checked/forbidden). Item_id può essere negativo (manual).
+- `selections(email, item_id, flag, state)` — stato delle 2 caselle per gioco
+  (look/play × checked/forbidden). Item_id può essere negativo (manual). NB:
+  il DB CHECK ammette ancora 'buy' ma la UI non lo usa più (il "comprato" è
+  passato su plays.bought / manual_plays.bought).
 - `reservations(email, item_id, reserved_at, duration_minutes, note,
   share_token, max_seats, shared_with[], guests[], is_private)` — PK
   (email, item_id). share_token UNIQUE per link join. is_private = escluso
@@ -110,9 +112,10 @@ codice e identificatori in inglese.
 - `manual_items` — giochi aggiunti dall'utente al listone. PK (email, id) con
   CHECK id < 0 per non collidere con catalogo (positivi). Negativi assegnati
   con `COALESCE(MIN(id), 0) - 1` scoped al singolo utente.
-- `plays(email, item_id, rating, note)` — voti su giochi catalogo
-- `manual_plays(id, email, name, editor, rating, played_on, note)` — giochi
-  giocati FUORI dal catalogo
+- `plays(email, item_id, rating, note, bought)` — voti su giochi catalogo;
+  bought = "lo compresti?" impostato nel modal voto
+- `manual_plays(id, email, name, editor, rating, played_on, note, bought)` —
+  giochi giocati FUORI dal catalogo, stesso flag bought
 - `rushes(email, item_id, rush_day DATE)` — flag "vai allo stand presto"
   per ciascun giorno fiera
 - `push_subscriptions(id, email, endpoint UNIQUE, p256dh, auth, user_agent)`
@@ -158,6 +161,14 @@ scelte):
     hook separato useCommonCalendar, CommonDetailModal. Toggle "Evento
     privato" (is_private) per escludere dal comune. Nomi manual items
     altrui risolti via LEFT JOIN manual_items in /api/reservations.
+20. Pagina nascosta /bgg (no login, noindex) con link BGG per editore;
+    scraping BGG (scripts/bgg-scrape.mjs via curl.exe, nome esatto +
+    anno recente) per popolare bgg.json; bgg-aliases.json per override.
+21. Bottone azione BGG nel listone (diretto brand / cerca ambra). Cella
+    "buy" rimossa dal listone: il "comprato" è ora un toggle "Lo
+    compresti?" in PlayedModal/ManualPlayedModal (plays/manual_plays
+    .bought), mostrato come badge "Comprato" in /giocati. Link BGG
+    diretto aggiunto ai messaggi WhatsApp di prenotazione e flash rush.
 
 Quando l'utente chiede nuove feature, prima di iniziare a scrivere codice
 considera se ricicli pattern già stabiliti:

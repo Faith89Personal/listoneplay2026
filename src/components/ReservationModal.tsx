@@ -193,11 +193,15 @@ export default function ReservationModal({
           : editorPart || standPart
             ? `\n${editorPart}${standPart}`
             : "";
+      const bggLine = item.idBgg
+        ? `\n🔗 https://boardgamegeek.com/boardgame/${item.idBgg}`
+        : "";
       const text =
         `🎲 Sto prenotando: ${item.name}` +
         editorLine +
         `\n📅 ${range}` +
         seatLine +
+        bggLine +
         `\n\nUnisciti 👉 ${url}`;
       if (typeof navigator !== "undefined" && navigator.share) {
         try {

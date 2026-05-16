@@ -35,6 +35,7 @@ type CatalogRow = {
   name: string;
   editor: string;
   note: string | null;
+  bought: boolean;
   item: Item;
 };
 type ManualRow = {
@@ -44,6 +45,7 @@ type ManualRow = {
   name: string;
   editor: string;
   note: string | null;
+  bought: boolean;
   playedOn: string | null;
   manual: ManualPlay;
 };
@@ -85,6 +87,7 @@ export default function PlayedListView() {
           name: item.name,
           editor: item.editor.name,
           note: p.note,
+          bought: p.bought,
           item,
         };
       })
@@ -97,6 +100,7 @@ export default function PlayedListView() {
       name: p.name,
       editor: p.editor ?? "",
       note: p.note,
+      bought: p.bought,
       playedOn: p.playedOn,
       manual: p,
     }));
@@ -203,6 +207,11 @@ export default function PlayedListView() {
                         <span className="text-xs font-bold text-amber-600">
                           {r.rating}/5
                         </span>
+                        {r.bought && (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                            Comprato
+                          </span>
+                        )}
                         {isManual && (
                           <span className="ml-auto rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
                             Manuale

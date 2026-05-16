@@ -72,8 +72,11 @@ const BOOKTYPE_LABEL: Record<string, string> = {
   E: "Enciclopedia",
 };
 
-function bggUrl(idBgg: number): string {
-  return `https://boardgamegeek.com/boardgame/${idBgg}`;
+function bggHref(item: Item): string {
+  return item.idBgg
+    ? `https://boardgamegeek.com/boardgame/${item.idBgg}`
+    : "https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=" +
+        encodeURIComponent(item.name);
 }
 
 export default function GameRow({
@@ -109,11 +112,6 @@ export default function GameRow({
         onClick={() => onCycle(item.id, "play")}
         label={`Provare in fiera: ${item.name}`}
       />
-      <Cell
-        state={stateFor("buy")}
-        onClick={() => onCycle(item.id, "buy")}
-        label={`Comprare: ${item.name}`}
-      />
 
       <div className="flex flex-1 flex-col leading-tight">
         <span className="font-medium">
@@ -125,18 +123,6 @@ export default function GameRow({
             >
               {item.bookType}
             </span>
-          )}
-          {item.idBgg && (
-            <a
-              href={bggUrl(item.idBgg)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              title="Apri scheda BGG"
-              className="ml-1.5 inline-block rounded bg-orange-500 px-1 align-middle text-[9px] font-bold leading-snug text-white"
-            >
-              BGG
-            </a>
           )}
           {isManual && onEditManual && (
             <button
@@ -166,6 +152,44 @@ export default function GameRow({
           </span>
         )}
       </div>
+
+      <a
+        href={bggHref(item)}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        aria-label={
+          item.idBgg
+            ? `Scheda BoardGameGeek di ${item.name}`
+            : `Cerca ${item.name} su BoardGameGeek`
+        }
+        title={
+          item.idBgg ? "Scheda BoardGameGeek" : "Cerca su BoardGameGeek"
+        }
+        className={
+          "flex h-7 shrink-0 items-center justify-center rounded text-[10px] font-bold " +
+          (item.idBgg
+            ? "w-9 bg-brand text-white active:bg-brand-dark"
+            : "w-7 border border-amber-400 bg-amber-50 text-amber-700 active:bg-amber-100")
+        }
+      >
+        {item.idBgg ? (
+          "BGG"
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.5" y2="16.5" />
+          </svg>
+        )}
+      </a>
 
       {canRate && (
         <button

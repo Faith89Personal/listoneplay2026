@@ -115,8 +115,8 @@ Tabelle attuali:
 - `reservations` (tavolo prenotato, con share_token, max_seats, shared_with, guests)
 - `manual_events` (eventi manuali in calendario, stessi campi sharing)
 - `manual_items` (giochi aggiunti dall'utente al listone, id negativo per utente)
-- `manual_plays` (giocati fuori listone con voto)
-- `plays` (voti su giochi catalogo)
+- `manual_plays` (giocati fuori listone con voto, flag `bought`)
+- `plays` (voti su giochi catalogo, flag `bought` = "lo compresti?")
 - `rushes` (stand da raggiungere la mattina presto)
 - `push_subscriptions` (subscription web push degli utenti)
 

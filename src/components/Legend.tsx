@@ -1,4 +1,4 @@
-import { LookIcon, PlayIcon, BuyIcon, ForbiddenIcon } from "@/components/icons";
+import { LookIcon, PlayIcon, ForbiddenIcon } from "@/components/icons";
 
 export default function Legend() {
   return (
@@ -20,16 +20,33 @@ export default function Legend() {
           <span>Voglio farci una partita in fiera</span>
         </li>
         <li className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded bg-brand-soft">
-            <BuyIcon className="h-4 w-4 text-brand-dark" />
-          </span>
-          <span>Questo torna a casa con me</span>
-        </li>
-        <li className="flex items-center gap-3">
           <span className="flex h-7 w-7 items-center justify-center rounded bg-neutral-100">
             <ForbiddenIcon className="h-4 w-4 text-neutral-500" />
           </span>
-          <span>Non provabile o comprabile</span>
+          <span>Non provabile</span>
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="flex h-7 items-center justify-center rounded bg-brand px-1.5 text-[10px] font-bold text-white">
+            BGG
+          </span>
+          <span>Scheda BoardGameGeek diretta</span>
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="flex h-7 w-7 items-center justify-center rounded border border-amber-400 bg-amber-50">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4 text-amber-700"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.5" y2="16.5" />
+            </svg>
+          </span>
+          <span>Ricerca su BoardGameGeek (nessun match diretto)</span>
         </li>
         <li className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-xs text-neutral-600">
           <span className="inline-flex items-center gap-1">

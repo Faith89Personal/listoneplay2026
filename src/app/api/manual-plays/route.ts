@@ -12,6 +12,7 @@ type Row = {
   rating: number;
   played_on: string | null;
   note: string | null;
+  bought: boolean;
 };
 
 export async function GET() {
@@ -22,7 +23,7 @@ export async function GET() {
   try {
     const sql = requireSql();
     const rows = (await sql`
-      SELECT id, name, editor, rating, played_on, note
+      SELECT id, name, editor, rating, played_on, note, bought
       FROM manual_plays
       WHERE email = ${session.email}
       ORDER BY rating DESC, name ASC
@@ -38,6 +39,7 @@ export async function GET() {
             ? r.played_on.slice(0, 10)
             : null,
         note: r.note,
+        bought: r.bought,
       })),
     });
   } catch (err) {
@@ -55,6 +57,7 @@ type PostBody = {
   rating?: unknown;
   playedOn?: unknown;
   note?: unknown;
+  bought?: unknown;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -97,6 +100,7 @@ export async function POST(req: Request) {
     typeof body.note === "string" && body.note.trim().length > 0
       ? body.note.trim().slice(0, 500)
       : null;
+  const bought = body.bought === true;
   const id = typeof body.id === "number" && body.id > 0 ? body.id : null;
   try {
     const sql = requireSql();
@@ -108,6 +112,7 @@ export async function POST(req: Request) {
           rating = ${rating},
           played_on = ${playedOn},
           note = ${note},
+          bought = ${bought},
           updated_at = NOW()
         WHERE id = ${id} AND email = ${session.email}
         RETURNING id
@@ -118,8 +123,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, id: updated[0].id });
     }
     const inserted = (await sql`
-      INSERT INTO manual_plays (email, name, editor, rating, played_on, note)
-      VALUES (${session.email}, ${name}, ${editor}, ${rating}, ${playedOn}, ${note})
+      INSERT INTO manual_plays (email, name, editor, rating, played_on, note, bought)
+      VALUES (${session.email}, ${name}, ${editor}, ${rating}, ${playedOn}, ${note}, ${bought})
       RETURNING id
     `) as { id: number }[];
     return NextResponse.json({ ok: true, id: inserted[0].id });

@@ -8,6 +8,7 @@ export type Play = {
   rating: number;
   note: string | null;
   playedAt: string;
+  bought: boolean;
 };
 
 export type PlaysState = {
@@ -72,7 +73,12 @@ export function usePlays() {
   }, [session.loading, session.email]);
 
   const save = useCallback(
-    async (p: { itemId: number; rating: number; note: string | null }) => {
+    async (p: {
+      itemId: number;
+      rating: number;
+      note: string | null;
+      bought: boolean;
+    }) => {
       const res = await fetch("/api/plays", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
