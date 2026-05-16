@@ -26,7 +26,7 @@ export default function Legend() {
           <span>Non provabile</span>
         </li>
         <li className="flex items-center gap-3">
-          <span className="flex h-7 items-center justify-center rounded bg-brand px-1.5 text-[10px] font-bold text-white">
+          <span className="flex h-7 items-center justify-center rounded border border-neutral-300 bg-neutral-100 px-1.5 text-[10px] font-bold text-neutral-600">
             BGG
           </span>
           <span>Scheda BoardGameGeek diretta</span>

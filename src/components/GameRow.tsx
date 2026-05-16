@@ -169,7 +169,7 @@ export default function GameRow({
         className={
           "flex h-7 shrink-0 items-center justify-center rounded text-[10px] font-bold " +
           (item.idBgg
-            ? "w-9 bg-brand text-white active:bg-brand-dark"
+            ? "w-9 border border-neutral-300 bg-neutral-100 text-neutral-600 active:bg-neutral-200"
             : "w-7 border border-amber-400 bg-amber-50 text-amber-700 active:bg-amber-100")
         }
       >
