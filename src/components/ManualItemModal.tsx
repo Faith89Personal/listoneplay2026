@@ -19,6 +19,16 @@ type Props = {
   onClose: () => void;
 };
 
+function parseBggId(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const urlMatch = trimmed.match(/boardgame(?:expansion)?\/(\d+)/i);
+  const digits = urlMatch ? urlMatch[1] : trimmed.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export default function ManualItemModal({ existing, onClose }: Props) {
   const { save, remove } = useManualItems();
   const [name, setName] = useState<string>(existing?.name ?? "");
@@ -27,6 +37,9 @@ export default function ManualItemModal({ existing, onClose }: Props) {
     existing?.categoryId ?? 1,
   );
   const [stand, setStand] = useState<string>(existing?.stand ?? "");
+  const [bgg, setBgg] = useState<string>(
+    existing?.idBgg != null ? String(existing.idBgg) : "",
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -49,6 +62,12 @@ export default function ManualItemModal({ existing, onClose }: Props) {
       setError("invalid_category");
       return;
     }
+    const bggTrimmed = bgg.trim();
+    const idBgg = bggTrimmed ? parseBggId(bggTrimmed) : null;
+    if (bggTrimmed && idBgg === null) {
+      setError("invalid_bgg");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -58,7 +77,7 @@ export default function ManualItemModal({ existing, onClose }: Props) {
         editor: editor.trim(),
         categoryId,
         stand: stand.trim() || null,
-        idBgg: existing?.idBgg ?? null,
+        idBgg,
       });
       onClose();
     } catch (err) {
@@ -208,13 +227,33 @@ export default function ManualItemModal({ existing, onClose }: Props) {
               />
             </label>
 
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-neutral-600">
+                ID BoardGameGeek (opzionale)
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={bgg}
+                onChange={(e) => setBgg(e.target.value)}
+                maxLength={200}
+                placeholder="es. 12345 o link BGG incollato"
+                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm"
+              />
+              <span className="mt-1 block text-[11px] text-neutral-500">
+                Abilita il bottone con link diretto alla scheda BGG.
+              </span>
+            </label>
+
             {error && (
               <p className="rounded bg-red-50 px-2 py-1 text-xs text-red-700">
                 {error === "invalid_name"
                   ? "Il nome è obbligatorio"
                   : error === "invalid_category"
                     ? "Categoria non valida"
-                    : `Errore: ${error}`}
+                    : error === "invalid_bgg"
+                      ? "ID BGG non valido (usa il numero o il link)"
+                      : `Errore: ${error}`}
               </p>
             )}
 
